@@ -52,6 +52,14 @@ public class Utils {
         return Modifier.toString(field.getModifiers()) + " " + field.getType() + " " + field.getName();
     }
 
+    public static String getJavaName(Method method) {
+        StringBuilder result = new StringBuilder();
+        result.append(getTypeSignature(method.getDeclaringClass()));
+        result.append("->");
+        result.append(getMethodSignature(method));
+        return result.toString();
+    }
+
     public static String getMethodSignature(Method method) {
         StringBuilder result = new StringBuilder();
 

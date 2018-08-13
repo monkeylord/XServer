@@ -27,7 +27,7 @@ import static android.R.attr.data;
 public class wsMethodView implements XServer.wsOperation {
     @Override
     public NanoWSD.WebSocket handle(NanoHTTPD.IHTTPSession handshake) {
-        return null;
+        return new ws(handshake);
     }
 
     public class ws extends NanoWSD.WebSocket {
@@ -53,6 +53,7 @@ public class wsMethodView implements XServer.wsOperation {
             unhook = myHook.hook(m);
             if (unhook != null) try {
                 sendLog("Start Monitoring</br>");
+                sendUpdateObj();
             } catch (IOException e) {
                 e.printStackTrace();
             }

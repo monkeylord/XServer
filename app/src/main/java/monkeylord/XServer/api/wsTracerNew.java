@@ -55,7 +55,7 @@ public class wsTracerNew extends XC_MethodHook implements XServer.wsOperation {
             JSONObject req = JSON.parseObject(message.getTextPayload());
             switch (req.getString("op")) {
                 case "hook":
-                    Method method = MethodHandler.getMethod(req.getString("method"));
+                    Method method = MethodHandler.getMethod(req.getString("class"), req.getString("method"));
                     if (method != null) {
                         unhooks.put(method.getDeclaringClass() + "." + method.getName() + Utils.getMethodSignature(method), XposedBridge.hookMethod(method, me));
                         trySend(method.getName() + "hooked");

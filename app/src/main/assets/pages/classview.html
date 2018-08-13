@@ -4,8 +4,9 @@
     <title>ClassView</title>
 </head>
 <body>
+<#if name?exists>
 <h1>Current Class:</h1>
-<p>${clzname}</p>
+    <p>${name}</p>
 <#if fieldList?exists>
     <h1>Fields:</h1>
     <#list fieldList as field>
@@ -15,8 +16,11 @@
 <#if methodList?exists>
     <h1>Methods:</h1>
     <#list methodList as method>
-        <h2><a href=/methodview?class=${clzname}&method=${method_index}>${method}</a></h2>
+        <h2><a href=/methodview?class=${name}&method=${method_index}>${method}</a></h2>
     </#list>
+</#if>
+    <#else>
+        <p>Class Not Found</p>
 </#if>
 </body>
 </html>

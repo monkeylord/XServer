@@ -10,19 +10,37 @@ public class DexHelper {
     public static String[] getClassesInDex(ClassLoader CL) {
         String[] result = {};
         try {
-            Object pathList = getField(CL.getClass().getSuperclass(), "pathList", CL);
-            Object elements = getField(pathList.getClass(), "dexElements", pathList);
+            Field field3 = CL.getClass().getSuperclass().getDeclaredField("pathList");
+            field3.setAccessible(true);
+            Object pathList = field3.get(CL);
+            Field field2 = pathList.getClass().getDeclaredField("dexElements");
+            field2.setAccessible(true);
+            Object elements = field2.get(pathList);
             for (int i = 0; i < Array.getLength(elements); i++) {
                 Object element = Array.get(elements, i);
-                Object DexFile = getField(element.getClass(), "dexFile", element);
+                Field field1 = element.getClass().getDeclaredField("dexFile");
+                field1.setAccessible(true);
+                Object DexFile = field1.get(element);
                 XposedBridge.log(DexFile.getClass().getName());
                 for (Method m : DexFile.getClass().getDeclaredMethods()) {
                     // XposedBridge.log("DEXFILE:"+m.getName());
                     if (m.getName().equalsIgnoreCase("getClassNameList")) {
                         m.setAccessible(true);
+                        Field field = DexFile.getClass().getDeclaredField("mCookie");
+                        field.setAccessible(true);
                         Object clist = m.invoke(DexFile,
-                                getField(DexFile.getClass(), "mCookie", DexFile));
-                        result = mergeArray2(result, (String[]) clist);
+                                field.get(DexFile));
+                        int length1 = result.length;
+                        int length2 = ((String[]) clist).length;
+                        int totalLength = length1 + length2;
+                        String[] totalArr = new String[totalLength];
+                        for (int i1 = 0; i1 < length1; i1++) {
+                            totalArr[i1] = result[i1];
+                        }
+                        for (int i1 = 0; i1 < length2; i1++) {
+                            totalArr[i1 + length1] = ((String[]) clist)[i1];
+                        }
+                        result = totalArr;
                         //return (String[]) clist;
                     }
                 }
@@ -32,27 +50,6 @@ public class DexHelper {
         } finally {
             return result;
         }
-    }
-
-    public static Object getField(Class<?> cl, String fieldName, Object object)
-            throws NoSuchFieldException, IllegalAccessException {
-        Field field = cl.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(object);
-    }
-
-    public static String[] mergeArray2(String[] arr1, String[] arr2) {
-        int length1 = arr1.length;
-        int length2 = arr2.length;
-        int totalLength = length1 + length2;
-        String[] totalArr = new String[totalLength];
-        for (int i = 0; i < length1; i++) {
-            totalArr[i] = arr1[i];
-        }
-        for (int i = 0; i < length2; i++) {
-            totalArr[i + length1] = arr2[i];
-        }
-        return totalArr;
     }
 
 }
