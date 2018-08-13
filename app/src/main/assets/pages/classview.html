@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ClassView</title>
+</head>
+<body>
+<h1>Current Class:</h1>
+<p>${clzname}</p>
+<#if fieldList?exists>
+    <h1>Fields:</h1>
+    <#list fieldList as field>
+        <p>${field}</p>
+    </#list>
+</#if>
+<#if methodList?exists>
+    <h1>Methods:</h1>
+    <#list methodList as method>
+        <h2><a href=/methodview?class=${clzname}&method=${method_index}>${method}</a></h2>
+    </#list>
+</#if>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass Monitor</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+          name='viewport'/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+<body>
+<div id="message"></div>
+<hr/>
+Filters/Controls<br/>
+Class Filter:<input id="classFilter" type="text" value="${filter!}"/>
+Method Filter(RegEx):<input id="methodFilter" type="text" value=".*"/>
+Thread Filter:<input id="threadFilter" type="text" value="0"/>
+<button id="start" onclick="start()">Begin Monitoring</button>
+<button id="stop" onclick="stop()">Stop Monitoring</button>
+<button id="pause" onclick="pause()" disabled=true>Pause</button>
+</body>
+
+<script type="text/javascript">
+    var websocket = null;
+    var Datum={};
+    var messages="";
+    var timer;
+    if ('WebSocket' in window) {
+        websocket = new WebSocket(document.origin.replace("http","ws"));
+    }
+    else {
+        alert('Current Browser Not support websocket')
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = function () {
+        setMessageInnerHTML("WebSocket Error");
+    };
+
+    //连接成功建立的回调方法
+    websocket.onopen = function () {
+        setMessageInnerHTML("WebSocket Connected!");
+    }
+
+    function start(){
+        var cfilter=document.getElementById('classFilter').value;
+        var mfilter=document.getElementById('methodFilter').value;
+        var tfilter=document.getElementById('threadFilter').value;
+        var msg={"type":"hook","class":cfilter,"method":mfilter,"tid":tfilter}
+        websocket.send(JSON.stringify(msg));
+        document.getElementById('start').disabled=true;
+        document.getElementById('stop').disabled=false;
+        document.getElementById('pause').disabled=false;
+        document.getElementById('pause').innerHTML=="Pause"
+        timer=setInterval(function(){
+             document.getElementById('message').innerHTML = messages + '<br/>';
+             window.scrollTo(0,document.body.scrollHeight);
+             }, 1000);
+    }
+    function stop(){
+        var msg={"type":"unhookall","class":"","method":"","tid":""}
+        websocket.send(JSON.stringify(msg));
+        document.getElementById('start').disabled=false;
+        document.getElementById('stop').disabled=true;
+        document.getElementById('pause').disabled=true;
+        document.getElementById('pause').innerHTML=="Pause"
+        clearInterval(timer);
+    }
+    function pause(){
+        if(document.getElementById('pause').innerHTML=="Pause"){
+            clearInterval(timer);
+            document.getElementById('pause').innerHTML="Resume"
+        }else{
+            document.getElementById('pause').innerHTML="Pause"
+            timer=setInterval(function(){
+                document.getElementById('message').innerHTML = messages + '<br/>';
+                window.scrollTo(0,document.body.scrollHeight);
+            }, 1000);
+        }
+    }
+    //接收到消息的回调方法
+    websocket.onmessage = function (event) {
+        data=JSON.parse(event.data);
+        if(data.op=="msg")setMessageInnerHTML(data.msg);
+        else if(data.op=="data"){
+            Datum[data.dataname]=data.data;
+            console.log(Datum[data.dataname]);
+            }
+    }
+
+    //连接关闭的回调方法
+    websocket.onclose = function () {
+        setMessageInnerHTML("WebSocket Closed");
+        document.getElementById('start').disabled=true;
+        document.getElementById('stop').disabled=true;
+    }
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+        closeWebSocket();
+    }
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML) {
+        messages+=innerHTML;
+    }
+
+    //关闭WebSocket连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+
+</script>
+</html>

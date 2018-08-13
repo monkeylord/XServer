@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XServer - ${pid}</title>
+</head>
+<body>
+<h1>Welcome to XServer</h1>
+<p>Hello, I'm Monkeylord.</p>
+<p>XServer is a tool for remote reflect invoking which make all methods accessible from WEB
+    interface.</p>
+<p>It can be used to monitor method calls/returns as well.</p>
+<h2>Usages</h2>
+<p>Select a class, then select a method, then begin your monitoring/invoking.</p>
+<h2>Tips</h2>
+<p>It can be used to locate/bypass network traffic encryption/sign.</p>
+<p>Some Application may have several processes.To monitor specified process, you can use <i>'adb
+    forward tcp:8000 tcp:[pid]'</i> instead of 'adb forward tcp:8000 tcp:8000'</p>
+<h1>Infomations:</h1>
+<details>
+    <summary>Available Operations:</summary>
+    <#list opList as op>
+        <tr>
+            <p>${op}</p>
+        </tr>
+    </#list>
+</details>
+<#if params?exists>
+    <details open>
+        <summary>Your Params:</summary>
+        <#list params?keys as key>
+            <p>${key} = ${params[key]}</p>
+        </#list>
+    </details>
+</#if>
+<#if headers?exists>
+    <details>
+        <summary>Your Headers:</summary>
+        <#list headers?keys as key>
+            <p>${key} = ${headers[key]}</p>
+        </#list>
+    </details>
+</#if>
+<#if parsers?exists>
+    <details>
+        <summary>Available Parsers:</summary>
+        <#list parsers?keys as key>
+            <p>${key}</p>
+        </#list>
+    </details>
+</#if>
+<#if objs?exists>
+    <details>
+        <summary>Captured Objects:</summary>
+        <#list objs?keys as key>
+            <p>${key}</p>
+        </#list>
+    </details>
+</#if>
+<h1>Known Classes:</h1>
+<form action=/tracer method="post" target="_blank">
+    <p>
+        Filter:<input id="text" type="text" name="filter" onchange="refresh()"/>
+    </p>
+    <input type=submit value='Begin MassMonitoring(may not stable)'>
+</form>
+<div id=classes>
+</div>
+</body>
+<script type="text/javascript">
+    var clzs=[<#list clzs as clz>"${clz}",</#list>];
+    function refresh(){
+        var clzList=document.getElementById('classes');
+        clzList.innerHTML="";
+        var clzn = document.getElementById('text').value;
+        for (i = 0; i < clzs.length; i++) {
+            if(clzs[i].includes(clzn)){
+                var obj=document.createElement("tr");
+                obj.innerHTML="<p><a href=/classview?class="+clzs[i]+">"+clzs[i]+"</a></p>";
+                clzList.appendChild(obj);
+            }
+        }
+    }
+    refresh();
+
+
+</script>
+</html>
