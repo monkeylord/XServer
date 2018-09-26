@@ -7,4 +7,9 @@ public class StringParser implements XServer.ObjectParser {
     public Object parse(java.lang.String data) {
         return data;
     }
+
+    @Override
+    public String generate(Object obj) {
+        return obj.toString();
+    }
 }

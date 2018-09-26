@@ -56,6 +56,7 @@ public class Utils {
         StringBuilder result = new StringBuilder();
         result.append(getTypeSignature(method.getDeclaringClass()));
         result.append("->");
+        result.append(method.getName());
         result.append(getMethodSignature(method));
         return result.toString();
     }

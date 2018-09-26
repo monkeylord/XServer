@@ -8,4 +8,9 @@ public class JSONParser implements XServer.ObjectParser {
         //TODO
         return null;
     }
+
+    @Override
+    public String generate(Object obj) {
+        return null;
+    }
 }

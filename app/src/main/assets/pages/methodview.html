@@ -5,22 +5,23 @@
 </head>
 <body>
 <h1>Current Class:</h1>
-<p>${clzname}</p>
+<p>${class}</p>
 <h1>Current Method:</h1>
-<p>${methoddes}</p>
+<p>${description}</p>
+<p>${javaName}</p>
 <p>${json}</p>
 <h1>Detail:</h1>
-<#list paramList as param>
+<#list parametersTypes as param>
     <p>Param:${param.name}</p>
 </#list>
-<#list exceptionList as exception>
+<#list exceptionTypes as exception>
     <p>Throw:${exception.name}</p>
 </#list>
-<p>Return:${return.name}</p>
+<p>Return:${returnType.name}</p>
 
 <h1>Invoke</h1>
 <form action=/invoke method="post" target="_blank">
-    <input type=hidden name=class value=${clzname}>
+    <input type=hidden name=class value=${class}>
     <input type=hidden name=method value=${method}>
     Instance:
     <br>
@@ -30,7 +31,7 @@
             <option value=${obj}>${obj}</option>
         </#list>
     </select>
-    <#list paramList as param>
+    <#list parametersTypes as param>
         <p>Param${param_index}: ${param.name}</p>
         <input type=text name=param${param_index} value=>
         <input type=radio name=parser${param_index} value=string checked> String
@@ -51,7 +52,7 @@
     var messages="";
     //判断当前浏览器是否支持WebSocket
     if ('WebSocket' in window) {
-        websocket = new WebSocket(document.origin.replace("http","ws")+"/methodview?class=${clzname}&method=${method}");
+        websocket = new WebSocket(document.origin.replace("http","ws")+"/methodview?class=${class}&method=${method}");
     }
     else {
         alert('当前浏览器 Not support websocket')

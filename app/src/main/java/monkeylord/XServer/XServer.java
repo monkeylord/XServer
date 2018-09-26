@@ -13,6 +13,7 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import monkeylord.XServer.api.ClassView;
 import monkeylord.XServer.api.Invoke;
+import monkeylord.XServer.api.Invoke_New;
 import monkeylord.XServer.api.MethodView;
 import monkeylord.XServer.api.Tracer;
 import monkeylord.XServer.api.wsMethodView;
@@ -39,6 +40,9 @@ public class XServer extends NanoWSD {
         parsers.put("string", new StringParser());
         parsers.put("int", new IntParser());
         parsers.put("byte", new ByteArrayParser());
+        parsers.put("Ljava.lang.String;", new StringParser());
+        parsers.put("I", new IntParser());
+        parsers.put("[B", new ByteArrayParser());
 
         wsroute.put("/", new wsTracer());
         wsroute.put("/methodview", new wsMethodView());
@@ -50,33 +54,18 @@ public class XServer extends NanoWSD {
         XServer.route.put("/methodview", new MethodView());
         XServer.route.put("/tracer", new Tracer());
         XServer.route.put("/invoke", new Invoke());
+        XServer.route.put("/invoke2", new Invoke_New());
         try {
             start(0, false);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-    public static String render(Map<String, Object> model, String page) throws IOException, TemplateException {
-        Template tmp = new Template(page, new InputStreamReader(XposedEntry.res.getAssets().open(page)), null);
-        StringWriter sw = new StringWriter();
-        tmp.process(model, sw);
-        return sw.toString();
-    }
-
     @Override
     protected WebSocket openWebSocket(IHTTPSession handshake) {
         wsOperation wsop = wsroute.get(handshake.getUri());
         if (wsop != null) return wsop.handle(handshake);
         else return wsroute.get("/").handle(handshake);
-    }
-
-    public void Register(String uri, Operation op) {
-        route.put(uri, op);
-    }
-
-    public void Register(String uri, wsOperation op) {
-        wsroute.put(uri, op);
     }
 
     @Override
@@ -94,9 +83,24 @@ public class XServer extends NanoWSD {
         if (operation == null) operation = route.get("/");
         return newFixedLengthResponse(operation.handle(uri, session.getParms(), headers, files));
     }
+    public void Register(String uri, Operation op) {
+        route.put(uri, op);
+    }
+    public void Register(String uri, wsOperation op) {
+        wsroute.put(uri, op);
+    }
+
+    public static String render(Map<String, Object> model, String page) throws IOException, TemplateException {
+        Template tmp = new Template(page, new InputStreamReader(XposedEntry.res.getAssets().open(page)), null);
+        StringWriter sw = new StringWriter();
+        tmp.process(model, sw);
+        return sw.toString();
+    }
+
 
     public interface ObjectParser {
         Object parse(String data);
+        String generate(Object obj);
     }
 
     public interface Operation {

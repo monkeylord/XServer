@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -18,9 +19,12 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import monkeylord.XServer.XServer;
 import monkeylord.XServer.XposedEntry;
+import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.utils.NanoHTTPD;
 import monkeylord.XServer.utils.NanoWSD;
+import monkeylord.XServer.utils.Utils;
+import monkeylord.XServer.utils.netUtil;
 
 import static android.R.attr.data;
 
@@ -31,10 +35,11 @@ public class wsMethodView implements XServer.wsOperation {
     }
 
     public class ws extends NanoWSD.WebSocket {
-        Method m = null;
+        public Method m = null;
+        public String server="http://127.0.0.1:8000";//+Process.myPid();
         XC_MethodHook.Unhook unhook = null;
         MethodHook myHook = new MethodHook(this);
-        boolean modify = false;
+        boolean modify = true;
         HashMap<String, Object> objs = new HashMap<>();
 
         public ws(NanoHTTPD.IHTTPSession handshakeRequest) {
@@ -86,22 +91,6 @@ public class wsMethodView implements XServer.wsOperation {
             send(new JSONObject(object).toString());
         }
 
-        void requestArgs(Object[] args) throws IOException {
-            Map<String, Object> object = new HashMap<String, Object>();
-            object.put("op", "data");
-            object.put("data", data);
-            //object.put("dataname",dataname);
-            send(new JSONObject(object).toString());
-        }
-
-        void requestResult(Object obj) throws IOException {
-            Map<String, Object> object = new HashMap<String, Object>();
-            object.put("op", "data");
-            object.put("data", data);
-            //object.put("dataname",dataname);
-            send(new JSONObject(object).toString());
-        }
-
         void sendUpdateObj() throws IOException {
             Map<String, Object> object = new HashMap<String, Object>();
             object.put("op", "updatethis");
@@ -136,18 +125,11 @@ public class wsMethodView implements XServer.wsOperation {
             super.beforeHookedMethod(param);
             if (pid > 0 && pid != Process.myPid()) return;
             gatherInfo(param);
+            if(Invoke_New.isMe())return;
             if (thisObject != null) {
                 ObjectHandler.objects.put(thisObject.getClass().getName() + "@" + Integer.toHexString(thisObject.hashCode()), thisObject);
                 myws.sendUpdateObj();
             }
-            if (myws.modify) {
-                /*Object[] newArgs=requestArgs(args);
-                if(newArgs.length>0)for (int i=0;i<newArgs.length;i++){
-                    args[i]=newArgs[i];
-                }
-                */
-            }
-
             StringBuilder sb = new StringBuilder();
             sb.append("<details open>");
             sb.append("<summary>[" + Process.myPid() + "]" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + " Called</summary>");
@@ -170,6 +152,26 @@ public class wsMethodView implements XServer.wsOperation {
                 sb.append("</dl>");
                 //sb.append("</details>");
                 log(sb.toString());
+            }
+            if (myws.modify) {
+                HashMap json=new HashMap();
+                json.put("method", Utils.getJavaName(myws.m));
+                if(thisObject!=null)json.put("this",ObjectHandler.saveObject(thisObject));
+                ArrayList params=new ArrayList();
+                for (Object arg:args) {
+                    params.add(ObjectHandler.saveObject(arg));
+                }
+                json.put("params",params.toArray());
+                ArrayList stacks=new ArrayList();
+                for (StackTraceElement element:Thread.currentThread().getStackTrace()) {
+                    stacks.add(element.getClassName() + "." + element.getMethodName() + " : " + element.getLineNumber());
+                }
+                json.put("stack",stacks);
+                param.setResult(
+                        ObjectHandler.parseObject(
+                                new netUtil(myws.server + "/invoke2", new JSONObject(json).toString()).getRet()
+                        )
+                );
             }
         }
 

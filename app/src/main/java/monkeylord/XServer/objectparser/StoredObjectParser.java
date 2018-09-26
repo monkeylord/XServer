@@ -8,4 +8,9 @@ public class StoredObjectParser implements XServer.ObjectParser {
     public Object parse(String data) {
         return ObjectHandler.objects.get(data);
     }
+
+    @Override
+    public String generate(Object obj) {
+        return null;
+    }
 }

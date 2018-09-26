@@ -1,6 +1,7 @@
 package monkeylord.XServer.handler;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class MethodHandler {
         detail.put("returnType", method.getReturnType());
         detail.put("exceptionTypes", method.getExceptionTypes());
         detail.put("description", Utils.MethodDescription(method));
-        detail.put("json", JSON.toJSON(method));
+        detail.put("json", JSON.toJSONString(method, SerializerFeature.PrettyFormat));
         return detail;
     }
 
@@ -35,7 +36,14 @@ public class MethodHandler {
         }
     }
 
-    public static Method[] getMethodsbyName(String methodName) {
+    public static Method getMethodbyJavaName(String javaName) {
+        String classname=javaName.substring(0,javaName.indexOf("->"));
+        String method=javaName.substring(javaName.indexOf("->")+2);
+        Class clz=ClassHandler.findClassbyJavaName(classname,XposedEntry.classLoader);
+        if(clz==null)return null;
+        for (Method m:clz.getDeclaredMethods()) {
+            if(Utils.getJavaName(m).equals(javaName))return m;
+        }
         return null;
     }
 

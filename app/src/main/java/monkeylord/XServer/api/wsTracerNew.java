@@ -32,23 +32,7 @@ public class wsTracerNew extends XC_MethodHook implements XServer.wsOperation {
         public ws(NanoHTTPD.IHTTPSession handshakeRequest) {
             super(handshakeRequest);
         }
-
-        @Override
-        protected void onOpen() {
-            trySend("XServer wsTrace Connected.Welcome.Current Hooked:");
-            trySend(JSON.toJSONString(unhooks));
-        }
-
-        @Override
-        protected void onClose(NanoWSD.WebSocketFrame.CloseCode code, String reason, boolean initiatedByRemote) {
-            //收拾Hook
-            if (unhookOnClose) {
-                for (String methodname : unhooks.keySet()) {
-                    unhooks.remove(methodname).unhook();
-                }
-            }
-        }
-
+        private void trySend(String payload) {try {send(payload);} catch (IOException e) {e.printStackTrace();}}
         @Override
         protected void onMessage(NanoWSD.WebSocketFrame message) {
             //消息处理
@@ -99,19 +83,25 @@ public class wsTracerNew extends XC_MethodHook implements XServer.wsOperation {
         }
 
         @Override
-        protected void onPong(NanoWSD.WebSocketFrame pong) {
+        protected void onOpen() {
+            trySend("XServer wsTrace Connected.Welcome.Current Hooked:");
+            trySend(JSON.toJSONString(unhooks));
         }
 
         @Override
-        protected void onException(IOException exception) {
-        }
-
-        private void trySend(String payload) {
-            try {
-                send(payload);
-            } catch (IOException e) {
-                e.printStackTrace();
+        protected void onClose(NanoWSD.WebSocketFrame.CloseCode code, String reason, boolean initiatedByRemote) {
+            if (unhookOnClose) {
+                for (String methodname : unhooks.keySet()) {
+                    unhooks.remove(methodname).unhook();
+                }
             }
         }
+
+        @Override
+        protected void onPong(NanoWSD.WebSocketFrame pong) {}
+        @Override
+        protected void onException(IOException exception) {}
+
+
     }
 }

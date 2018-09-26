@@ -7,4 +7,9 @@ public class IntParser implements XServer.ObjectParser {
     public java.lang.Object parse(java.lang.String data) {
         return Integer.parseInt(data);
     }
+
+    @Override
+    public String generate(Object obj) {
+        return obj.toString();
+    }
 }
