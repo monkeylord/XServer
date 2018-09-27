@@ -11,6 +11,7 @@ import monkeylord.XServer.utils.Utils;
 
 import static monkeylord.XServer.XServer.parsers;
 
+//处理对象相关内容
 public class ObjectHandler {
     public static HashMap<String, Object> objects = new HashMap<String, Object>();
 

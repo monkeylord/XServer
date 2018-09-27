@@ -39,7 +39,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "monkeylord.demoapp");
         if (!loadPackageParam.packageName.equals(targetApp)) return;
         gatherInfo(loadPackageParam);
-        //Write your code here.
+        //启动XServer
         new XServer(8000);
         new XServer(Process.myPid());
         XposedBridge.log("XServer Listening...");

@@ -18,6 +18,8 @@ import monkeylord.XServer.utils.NanoHTTPD;
 import monkeylord.XServer.utils.NanoWSD;
 import monkeylord.XServer.utils.Utils;
 
+//MassTracer的WebSocket处理重构，交互式。
+//TODO 完成增删改查，兼容之前接口，然后替换。
 public class wsTracerNew extends XC_MethodHook implements XServer.wsOperation {
     final boolean unhookOnClose = false;
     HashMap<String, Unhook> unhooks = new HashMap<>();

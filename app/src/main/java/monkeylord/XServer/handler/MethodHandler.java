@@ -10,6 +10,7 @@ import java.util.HashMap;
 import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.utils.Utils;
 
+//处理方法相关内容
 public class MethodHandler {
     public static HashMap<String, Object> getMethodDetail(Method method) {
         HashMap<String, Object> detail = new HashMap<String, Object>();

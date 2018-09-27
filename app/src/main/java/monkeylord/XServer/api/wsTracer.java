@@ -20,6 +20,7 @@ import monkeylord.XServer.utils.DexHelper;
 import monkeylord.XServer.utils.NanoHTTPD;
 import monkeylord.XServer.utils.NanoWSD;
 
+//MassTracer的WebSocket处理
 public class wsTracer implements XServer.wsOperation {
     public static HashMap<String, XC_MethodHook.Unhook> unhooks = new HashMap<String, XC_MethodHook.Unhook>();
 

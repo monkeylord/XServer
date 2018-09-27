@@ -7,6 +7,7 @@ import monkeylord.XServer.XServer;
 import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.ObjectHandler;
 
+//处理反射调用
 public class Invoke implements XServer.Operation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {

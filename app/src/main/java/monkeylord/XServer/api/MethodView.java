@@ -9,6 +9,7 @@ import monkeylord.XServer.handler.ClassHandler;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 
+//查看方法详情页面
 public class MethodView implements XServer.Operation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {

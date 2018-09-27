@@ -2,6 +2,7 @@ package monkeylord.XServer.handler;
 
 import de.robv.android.xposed.XC_MethodHook;
 
+//处理hook相关内容
 public class HookHandler {
     static boolean AddHook() {
         return false;

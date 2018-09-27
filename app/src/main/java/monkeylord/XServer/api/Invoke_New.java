@@ -13,6 +13,7 @@ import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 
+//处理反射调用的另一个接口
 public class Invoke_New implements XServer.Operation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
@@ -21,7 +22,7 @@ public class Invoke_New implements XServer.Operation {
             JSONObject data = JSON.parseObject(files.get("postData"));
             Method method= MethodHandler.getMethodbyJavaName(data.getString("method"));
             method.setAccessible(true);
-            Object thisobj = ObjectHandler.parseObject(data.getString("this"));
+            Object thisobj = (data.getString("this")!=null)?ObjectHandler.parseObject(data.getString("this")):null;
             Object[] params = new Object[method.getParameterTypes().length];
             JSONArray paramList = data.getJSONArray("params");
             for (int i = 0; i < params.length; i++) {

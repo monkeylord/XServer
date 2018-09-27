@@ -10,6 +10,7 @@ import java.util.HashMap;
 import monkeylord.XServer.utils.DexHelper;
 import monkeylord.XServer.utils.Utils;
 
+//处理类相关的内容
 public class ClassHandler {
     public static String[] getAllClasses(ClassLoader classLoader) {
         return DexHelper.getClassesInDex(classLoader);

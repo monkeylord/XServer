@@ -28,6 +28,7 @@ import monkeylord.XServer.utils.netUtil;
 
 import static android.R.attr.data;
 
+//单方法监控的WebSocket处理
 public class wsMethodView implements XServer.wsOperation {
     @Override
     public NanoWSD.WebSocket handle(NanoHTTPD.IHTTPSession handshake) {
@@ -36,7 +37,7 @@ public class wsMethodView implements XServer.wsOperation {
 
     public class ws extends NanoWSD.WebSocket {
         public Method m = null;
-        public String server="http://127.0.0.1:8000";//+Process.myPid();
+        public String server="http://127.0.0.1:8000";//TODO +Process.myPid();
         XC_MethodHook.Unhook unhook = null;
         MethodHook myHook = new MethodHook(this);
         boolean modify = true;
