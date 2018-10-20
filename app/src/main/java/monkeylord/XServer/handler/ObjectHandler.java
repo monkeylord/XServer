@@ -3,6 +3,7 @@ package monkeylord.XServer.handler;
 import java.io.Console;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import monkeylord.XServer.objectparser.GenericParser;
@@ -24,8 +25,14 @@ public class ObjectHandler {
         if(parsers.get(Utils.getTypeSignature(obj.getClass()))!=null){
             return Utils.getTypeSignature(obj.getClass())+"#"+parsers.get(Utils.getTypeSignature(obj.getClass())).generate(obj);
         }else{
-            storeObject(obj,""+obj.hashCode());
-            return Utils.getTypeSignature(obj.getClass())+"#"+obj.hashCode();
+            String objname;
+            try{
+                objname=""+obj.hashCode();
+            }catch (Exception e){
+                objname= ""+new Random().nextLong();
+            }
+            storeObject(obj,""+objname);
+            return Utils.getTypeSignature(obj.getClass())+"#"+objname;
         }
     }
 

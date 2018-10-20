@@ -7,15 +7,17 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 </head>
 <body>
+<div id="control" style="position:fixed;top:0px;left:0px;">
+    Filters/Controls<br/>
+    Class Filter:<input id="classFilter" type="text" value="${filter!}"/>
+    Method Filter(RegEx):<input id="methodFilter" type="text" value=".*"/>
+    Thread Filter:<input id="threadFilter" type="text" value="0"/>
+    <button id="start" onclick="start()">Begin Monitoring</button>
+    <button id="stop" onclick="stop()">Stop Monitoring</button>
+    <button id="pause" onclick="pause()" disabled=true>Pause</button>
+    <hr/>
+</div>
 <div id="message"></div>
-<hr/>
-Filters/Controls<br/>
-Class Filter:<input id="classFilter" type="text" value="${filter!}"/>
-Method Filter(RegEx):<input id="methodFilter" type="text" value=".*"/>
-Thread Filter:<input id="threadFilter" type="text" value="0"/>
-<button id="start" onclick="start()">Begin Monitoring</button>
-<button id="stop" onclick="stop()">Stop Monitoring</button>
-<button id="pause" onclick="pause()" disabled=true>Pause</button>
 </body>
 
 <script type="text/javascript">

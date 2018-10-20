@@ -7,7 +7,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -19,6 +22,7 @@ import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.utils.DexHelper;
 import monkeylord.XServer.utils.NanoHTTPD;
 import monkeylord.XServer.utils.NanoWSD;
+import monkeylord.XServer.utils.Utils;
 
 //MassTracer的WebSocket处理
 public class wsTracer implements XServer.wsOperation {
@@ -80,13 +84,14 @@ public class wsTracer implements XServer.wsOperation {
                     StringBuilder sb = new StringBuilder();
                     sb.append("<details><summary>Hooked Classes</summary>");
                     for (String clzn : DexHelper.getClassesInDex(XposedEntry.classLoader)) {
+                        if(clzn.startsWith("android"))continue;
                         if (clzn.contains(req.classn)) {
                             try {
                                 if (Class.forName(clzn, false, XposedEntry.classLoader).isInterface())
                                     continue;
                                 sb.append(clzn + "<br/>");
                                 myhook.hook(clzn, req.method);
-                            } catch (Exception e) {
+                            } catch (Throwable e) {
                                 this.sendLog("Exception:" + e.getLocalizedMessage() + "<br/>");
                             } finally {
 
@@ -104,6 +109,10 @@ public class wsTracer implements XServer.wsOperation {
                     this.sendLog(e.getLocalizedMessage());
                 } catch (IOException e1) {
                     e1.printStackTrace();
+                    for (XC_MethodHook.Unhook unhook : unhooks.values()) {
+                        unhook.unhook();
+                    }
+                    XposedBridge.log("wsTrace Closed");
                 }
             }
 
@@ -157,7 +166,7 @@ public class wsTracer implements XServer.wsOperation {
             gatherInfo(param);
             log("<details open>");
             if (getMid(method) != null)
-                log("<summary>[" + Process.myTid() + "]<a href=\"/methodview?class=" + method.getDeclaringClass().getName() + "&method=" + getMid(method) + "\">" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + "</a></summary>");
+                log("<summary>[" + Process.myTid() + "]<a href=\"/methodview?class=" + method.getDeclaringClass().getName() + "&method=" + getMid(method) +"&javaname="+ Utils.getJavaName((Method) method)+ "\">" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + "</a></summary>");
             else
                 log("<summary>[" + Process.myTid() + "]" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + "</summary>");
             log("<dl>");
@@ -182,7 +191,7 @@ public class wsTracer implements XServer.wsOperation {
             //Write your code here.
             try {
                 if (param.getThrowable() == null)
-                    log("<dt>Return</dt><dd>" + translate(result) + "</dd>");
+                    log("<dt>Return<a href=\"/methodview?class=" + method.getDeclaringClass().getName() + "&method=" + getMid(method) +"&javaname="+ Utils.getJavaName((Method) method)+ "\">+</a></dt><dd>" + translate(result,true) + "</dd>");
                 else
                     log("<dt>Throw</dt><dd>" + translate(param.getThrowable()) + "</dd>");
             } catch (Throwable e) {
@@ -204,9 +213,47 @@ public class wsTracer implements XServer.wsOperation {
         }
 
         private String translate(Object obj) {
+            return translate(obj,false);
+        }
+        private String translate(Object obj,boolean recursive) {
             //Write your translator here.
             if (obj == null) return "null";
-            else return obj.toString();
+            //处理空对象
+            else if(recursive&&obj.getClass().isArray()){
+                //递归处理数组
+                //TODO 处理环，可能会出现少见bug
+                StringBuilder sb=new StringBuilder();
+                sb.append('[');
+                for(int i=0;i<Array.getLength(obj);i++){
+                    if(i!=0)sb.append(',');
+                    sb.append(translate(Array.get(obj,i),false));
+                }
+                sb.append(']');
+                return sb.toString();
+            }
+            else if(recursive&&!obj.getClass().isPrimitive()&&!obj.getClass().getName().startsWith("java.lang")){
+                //复杂对象仅作简单处理，不递归
+                StringBuilder sb=new StringBuilder();
+                sb.append("@"+obj.getClass());
+                sb.append('=');
+                sb.append('{');
+                for (Field field:obj.getClass().getDeclaredFields()) {
+                    try {
+                        field.setAccessible(true);
+                        sb.append(field.getName()+"="+translate(field.get(obj),false));
+                        sb.append(',');
+                    }catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+                sb.append('}');
+                return sb.toString();
+            }
+            //简单toString()
+            else if(obj.getClass().isPrimitive()||obj.getClass().getName().startsWith("java.lang")){
+                return obj.toString();
+            }
+            else return "@"+obj.getClass().getName();
         }
 
         private String MethodDescription(MethodHookParam param) {

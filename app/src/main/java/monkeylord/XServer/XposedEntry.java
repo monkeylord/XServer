@@ -22,6 +22,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteInit {
 
+    public static boolean debug=true;
     public static ClassLoader classLoader;
     public static XModuleResources res;
     String targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "monkeylord.demoapp");

@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -59,6 +60,7 @@ public class netUtil extends Thread {
     private void doPost() {
         try {
             List<Proxy> proxys = ProxySelector.getDefault().select(new URI("http://www.baidu.com"));
+            //proxys.add(new Proxy(Proxy.Type.HTTP,new InetSocketAddress("127.0.0.1",8080)));
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection((proxys.size()>0)?proxys.get(0):Proxy.NO_PROXY);
             httpURLConnection.setRequestMethod("POST");// 提交模式
             httpURLConnection.setRequestProperty("Content-Type","application/json");

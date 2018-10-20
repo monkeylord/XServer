@@ -21,16 +21,21 @@ public class Invoke_New implements XServer.Operation {
         try {
             JSONObject data = JSON.parseObject(files.get("postData"));
             Method method= MethodHandler.getMethodbyJavaName(data.getString("method"));
-            method.setAccessible(true);
+            //method.setAccessible(true);
             Object thisobj = (data.getString("this")!=null)?ObjectHandler.parseObject(data.getString("this")):null;
             Object[] params = new Object[method.getParameterTypes().length];
             JSONArray paramList = data.getJSONArray("params");
             for (int i = 0; i < params.length; i++) {
                 params[i]=ObjectHandler.parseObject(paramList.getString(i));
             }
+            method.setAccessible(true);
             sb.append(ObjectHandler.saveObject(method.invoke(thisobj, params)));
         } catch (Exception e) {
             sb.append(e.getLocalizedMessage());
+            for (StackTraceElement st:e.getStackTrace()) {
+                sb.append(st.toString());
+                sb.append('\n');
+            }
             e.printStackTrace();
         }
         return sb.toString();
@@ -42,6 +47,4 @@ public class Invoke_New implements XServer.Operation {
         }
         return false;
     }
-
-
 }

@@ -24,4 +24,5 @@ public class ExampleUnitTest {
         System.out.println(ObjectHandler.parseObject("I#24"));
         assertEquals(4, 2 + 2);
     }
+
 }

@@ -13,12 +13,14 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import monkeylord.XServer.XServer;
 import monkeylord.XServer.XposedEntry;
+import monkeylord.XServer.handler.ClassHandler;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.utils.NanoHTTPD;
@@ -27,6 +29,7 @@ import monkeylord.XServer.utils.Utils;
 import monkeylord.XServer.utils.netUtil;
 
 import static android.R.attr.data;
+import static monkeylord.XServer.XServer.parsers;
 
 //单方法监控的WebSocket处理
 public class wsMethodView implements XServer.wsOperation {
@@ -47,7 +50,10 @@ public class wsMethodView implements XServer.wsOperation {
             super(handshakeRequest);
             try {
                 Map<String, String> args = handshakeRequest.getParms();
-                m = Class.forName(args.get("class"), false, XposedEntry.classLoader)
+                if(args.get("javaname")!=null) {
+                    m = MethodHandler.getMethodbyJavaName(args.get("javaname"));
+                }
+                if(m==null)m = Class.forName(args.get("class"), false, XposedEntry.classLoader)
                         .getDeclaredMethods()[Integer.parseInt(args.get("method"))];
             } catch (Exception e) {
                 e.printStackTrace();
@@ -128,7 +134,7 @@ public class wsMethodView implements XServer.wsOperation {
             gatherInfo(param);
             if(Invoke_New.isMe())return;
             if (thisObject != null) {
-                ObjectHandler.objects.put(thisObject.getClass().getName() + "@" + Integer.toHexString(thisObject.hashCode()), thisObject);
+                ObjectHandler.objects.put(thisObject.getClass().getName() + "@" + Integer.toHexString(new Random().nextInt()), thisObject);
                 myws.sendUpdateObj();
             }
             StringBuilder sb = new StringBuilder();
@@ -180,6 +186,7 @@ public class wsMethodView implements XServer.wsOperation {
             super.beforeHookedMethod(param);
             if (pid > 0 && pid != Process.myPid()) return;
             gatherInfo(param);
+            if(Invoke_New.isMe())return;
             result = param.getResult();
             //Write your code here.
             if (myws.modify) {
@@ -220,6 +227,7 @@ public class wsMethodView implements XServer.wsOperation {
             //Write your translator here.
             if (obj == null) return "null";
             if (obj.getClass().getName().equals("java.lang.String")) return obj.toString();
+            else if(Utils.getTypeSignature(obj.getClass()).equals("[B"))return parsers.get("[B").generate(obj);
             else return JSON.toJSONString(obj);
         }
 
