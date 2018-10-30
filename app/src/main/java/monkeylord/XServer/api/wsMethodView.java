@@ -132,7 +132,18 @@ public class wsMethodView implements XServer.wsOperation {
             super.beforeHookedMethod(param);
             if (pid > 0 && pid != Process.myPid()) return;
             gatherInfo(param);
-            if(Invoke_New.isMe())return;
+            if(Invoke_New.isMe()){
+                StringBuilder sb=new StringBuilder();
+                StackTraceElement[] stacks = Thread.currentThread().getStackTrace();
+                sb.append("<details closed>");
+                sb.append("<summary>Forwarding..</summary>");
+                for (int i = 0; i <stacks.length ; i++) {
+                    sb.append("<p>"+stacks[i].getClassName()+"."+stacks[i].getMethodName()+"</p>");
+                }
+                sb.append("/<details>");
+                myws.sendLog(sb.toString());
+                return;
+            }
             if (thisObject != null) {
                 ObjectHandler.objects.put(thisObject.getClass().getName() + "@" + Integer.toHexString(new Random().nextInt()), thisObject);
                 myws.sendUpdateObj();

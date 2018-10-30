@@ -3,6 +3,7 @@ package monkeylord.XServer;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -19,6 +20,13 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -27,11 +35,13 @@ public class MainActivity extends Activity {
     boolean isReg;
     TextView info;
     EditText appname;
+    File sharedFile;
     //CheckBox regEx;
 
     private static boolean isModuleActive() {
         return false;
     }
+    private File getFile(){ return null; }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +53,12 @@ public class MainActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         super.setContentView(layout, param);
         sp = getSharedPreferences("XServer", MODE_WORLD_READABLE);
-        hookee = sp.getString("targetApp", "com.");
+        sharedFile=getFile();
+        try {
+            hookee = new BufferedReader(new FileReader(sharedFile)).readLine();
+        } catch (Exception e) {
+            hookee = sp.getString("targetApp", "com.");
+        }
         //isReg = sp.getBoolean("isReg", false);
         final AppAdapter appAdapter = new AppAdapter(this);
         final AlertDialog selector = new AlertDialog.Builder(this)
@@ -113,6 +128,13 @@ public class MainActivity extends Activity {
         editor.putString("targetApp", hookee);
         //editor.putBoolean("isReg", isReg);
         editor.commit();
+        if(sharedFile!=null) try {
+            BufferedWriter writer=new BufferedWriter(new FileWriter(sharedFile));
+            writer.write(hookee);
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         info.setText("Target App:\r\n" + hookee);
         appname.setText(hookee);
         //regEx.setChecked(isReg);

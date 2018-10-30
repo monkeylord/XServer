@@ -164,7 +164,7 @@ public class wsTracer implements XServer.wsOperation {
             super.beforeHookedMethod(param);
             if (tid > 0 && tid != Process.myTid()) return;
             gatherInfo(param);
-            log("<details open>");
+            log("<details open style=\"padding-left: 5px;border-left: 5px outset;\">");
             if (getMid(method) != null)
                 log("<summary>[" + Process.myTid() + "]<a href=\"/methodview?class=" + method.getDeclaringClass().getName() + "&method=" + getMid(method) +"&javaname="+ Utils.getJavaName((Method) method)+ "\">" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + "</a></summary>");
             else

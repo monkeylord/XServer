@@ -42,7 +42,7 @@ public class Invoke_New implements XServer.Operation {
     }
     public static boolean isMe(){
         StackTraceElement[] stacks = Thread.currentThread().getStackTrace();
-        for (int i = 3; i <stacks.length ; i++) {
+        for (int i = 4; i <stacks.length ; i++) {
             if(stacks[i].getClassName().equals(Invoke_New.class.getName()))return true;
         }
         return false;

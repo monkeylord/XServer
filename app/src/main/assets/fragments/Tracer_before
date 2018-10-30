@@ -1,0 +1,16 @@
+<details open style="padding-left: 5px;border-left: 5px outset;">
+if (getMid(method) != null)
+    log("<summary>[" + Process.myTid() + "]<a href=\"/methodview?class=" + method.getDeclaringClass().getName() + "&method=" + getMid(method) +"&javaname="+ Utils.getJavaName((Method) method)+ "\">" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + "</a></summary>");
+else
+    log("<summary>[" + Process.myTid() + "]" + method.getDeclaringClass().getName() + "." + MethodDescription(param).toString() + "</summary>");
+log("<dl>");
+try {
+    if (args != null) for (int i = 0; i < args.length; i++) {
+        log("<dt>Argument " + i + "</dt>");
+        log("<dd>" + translate(args[i]) + "</dd>");
+    }
+
+} catch (Throwable e) {
+    log("<p>" + e.getLocalizedMessage() + "</p>");
+} finally {
+    log("</dl>");
