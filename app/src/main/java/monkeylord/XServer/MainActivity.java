@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -166,20 +167,18 @@ public class MainActivity extends Activity {
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-            RelativeLayout relativeLayout = new RelativeLayout(context);
-            relativeLayout.setLayoutParams(new AbsListView.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT));
-            ImageView iv = new ImageView(context);
+            if(view == null) {
+                LayoutInflater inflater = LayoutInflater.from(context);
+                view = inflater.inflate(R.layout.layout, null);
+            }
+            ImageView iv = view.findViewById(R.id.iv_app_icon);
             iv.setImageDrawable(packageInfo.get(i).applicationInfo.loadIcon(context.getPackageManager()));
-            iv.setMaxHeight(100);
-            iv.setMaxWidth(100);
-            TextView tv = new TextView(context);
-            tv.setPadding(80, 0, 0, 0);
-            tv.setText(packageInfo.get(i).applicationInfo.loadLabel(context.getPackageManager()) + "\r\n" + packageInfo.get(i).packageName);
-            relativeLayout.addView(iv);
-            relativeLayout.addView(tv);
-            return relativeLayout;
+            TextView displayName = view.findViewById(R.id.app_display_name);
+            TextView packageName = view.findViewById(R.id.app_package_name);
+            displayName.setText(packageInfo.get(i).applicationInfo.loadLabel(context.getPackageManager()));
+            packageName.setText(packageInfo.get(i).packageName);
+
+            return view;
         }
     }
 }
