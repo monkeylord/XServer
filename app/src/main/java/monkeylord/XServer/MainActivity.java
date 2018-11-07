@@ -166,20 +166,40 @@ public class MainActivity extends Activity {
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-            RelativeLayout relativeLayout = new RelativeLayout(context);
-            relativeLayout.setLayoutParams(new AbsListView.LayoutParams(
+            //调整了一下应用选择器的外观，感谢@smartdone大佬建议和帮助
+            //https://github.com/monkeylord/XServer/pull/1/commits/ab718e13a8ef1486f43e1023f62e312b3ff10307
+            LinearLayout linearLayout = new LinearLayout(context);
+            linearLayout.setLayoutParams(new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT));
-            ImageView iv = new ImageView(context);
-            iv.setImageDrawable(packageInfo.get(i).applicationInfo.loadIcon(context.getPackageManager()));
-            iv.setMaxHeight(100);
-            iv.setMaxWidth(100);
-            TextView tv = new TextView(context);
-            tv.setPadding(80, 0, 0, 0);
-            tv.setText(packageInfo.get(i).applicationInfo.loadLabel(context.getPackageManager()) + "\r\n" + packageInfo.get(i).packageName);
-            relativeLayout.addView(iv);
-            relativeLayout.addView(tv);
-            return relativeLayout;
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+            //创建图标
+            ImageView iv_app_icon = new ImageView(context);
+            iv_app_icon.setImageDrawable(packageInfo.get(i).applicationInfo.loadIcon(context.getPackageManager()));
+            iv_app_icon.setLayoutParams(new ViewGroup.LayoutParams(80, 80));
+            //iv_app_icon.setAdjustViewBounds(true);
+            iv_app_icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            iv_app_icon.setPadding(5,5,5,5);
+            linearLayout.addView(iv_app_icon);
+            //创建文本描述
+            LinearLayout textLayout=new LinearLayout(context);
+            textLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            textLayout.setOrientation(LinearLayout.VERTICAL);
+
+            TextView app_display_name = new TextView(context);
+            app_display_name.setPadding(5, 15, 5, 3);
+            app_display_name.getPaint().setFakeBoldText(true);
+            app_display_name.setText(packageInfo.get(i).applicationInfo.loadLabel(context.getPackageManager()));
+
+            TextView app_package_name = new TextView(context);
+            app_package_name.setPadding(5, 3, 5, 5);
+            app_package_name.setText( packageInfo.get(i).packageName);
+
+            textLayout.addView(app_display_name);
+            textLayout.addView(app_package_name);
+
+            linearLayout.addView(textLayout);
+            return linearLayout;
         }
     }
 }
