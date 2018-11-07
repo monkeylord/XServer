@@ -1,5 +1,7 @@
 package monkeylord.XServer.api;
 
+import android.util.Log;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -19,6 +21,7 @@ public class Invoke_New implements XServer.Operation {
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         StringBuilder sb = new StringBuilder();
         try {
+            Log.d("XServer", "Invoke2 postData:"+files.get("postData"));
             JSONObject data = JSON.parseObject(files.get("postData"));
             Method method= MethodHandler.getMethodbyJavaName(data.getString("method"));
             //method.setAccessible(true);
@@ -27,6 +30,7 @@ public class Invoke_New implements XServer.Operation {
             JSONArray paramList = data.getJSONArray("params");
             for (int i = 0; i < params.length; i++) {
                 params[i]=ObjectHandler.parseObject(paramList.getString(i));
+                Log.d("XServer", "Invoke2 Arg"+i+":"+paramList.getString(i));
             }
             method.setAccessible(true);
             sb.append(ObjectHandler.saveObject(method.invoke(thisobj, params)));
@@ -38,6 +42,7 @@ public class Invoke_New implements XServer.Operation {
             }
             e.printStackTrace();
         }
+        Log.d("XServer", "Invoke2 return:"+sb.toString());
         return sb.toString();
     }
     public static boolean isMe(){

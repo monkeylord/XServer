@@ -63,7 +63,7 @@ public class netUtil extends Thread {
             //proxys.add(new Proxy(Proxy.Type.HTTP,new InetSocketAddress("127.0.0.1",8080)));
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection((proxys.size()>0)?proxys.get(0):Proxy.NO_PROXY);
             httpURLConnection.setRequestMethod("POST");// 提交模式
-            httpURLConnection.setRequestProperty("Content-Type","application/json");
+            httpURLConnection.setRequestProperty("Content-Type","application/json; charset=utf-8");
             httpURLConnection.setConnectTimeout(10000);//连接超时 单位毫秒
             //httpURLConnection.setReadTimeout(2000);//读取超时 单位毫秒
             // 发送POST请求必须设置如下两行
