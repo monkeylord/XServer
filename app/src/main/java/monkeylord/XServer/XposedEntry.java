@@ -40,7 +40,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     public static XModuleResources res;
     static File sharedFile;
     static MemoryFile memFile;
-    static FileDescriptor sharedfd;
+    //static FileDescriptor sharedfd;
     String targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "monkeylord.demoapp");
     String packageName;
     Boolean isFirstApplication;
@@ -90,6 +90,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         targetApp=targetApp+"\r\n";
         memFile.writeBytes(targetApp.getBytes(),0,0,targetApp.length());
         //临时文件Approach
+        /*
         sharedFile=new File("/data/local/tmp/xserver");
         if (!sharedFile.exists()){
             sharedFile.createNewFile();
@@ -103,5 +104,6 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         writer=new BufferedWriter(new FileWriter(sharedFile));
         writer.write(targetApp);
         writer.flush();
+        */
     }
 }
