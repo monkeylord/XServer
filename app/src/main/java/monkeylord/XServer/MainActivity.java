@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.MemoryFile;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -27,6 +28,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -35,13 +38,14 @@ public class MainActivity extends Activity {
     boolean isReg;
     TextView info;
     EditText appname;
-    File sharedFile;
+    File sharedFile=null;
+    MemoryFile memFile=null;
     //CheckBox regEx;
 
     private static boolean isModuleActive() {
         return false;
     }
-    private File getFile(){ return null; }
+    private MemoryFile getFile(){ return null; }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +56,12 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         layout.setOrientation(LinearLayout.VERTICAL);
         super.setContentView(layout, param);
-        sp = getSharedPreferences("XServer", MODE_WORLD_READABLE);
-        sharedFile=getFile();
+        sp = getSharedPreferences("XServer", MODE_PRIVATE);
+        memFile=getFile();
         try {
-            hookee = new BufferedReader(new FileReader(sharedFile)).readLine();
+            if(memFile!=null)hookee = new BufferedReader(new InputStreamReader(memFile.getInputStream())).readLine();
+            else if(sharedFile!=null)hookee = new BufferedReader(new FileReader(sharedFile)).readLine();
+            else hookee = sp.getString("targetApp", "com.");
         } catch (Exception e) {
             hookee = sp.getString("targetApp", "com.");
         }
@@ -128,7 +134,13 @@ public class MainActivity extends Activity {
         editor.putString("targetApp", hookee);
         //editor.putBoolean("isReg", isReg);
         editor.commit();
-        if(sharedFile!=null) try {
+        if(memFile!=null)try{
+            BufferedWriter writer=new BufferedWriter(new OutputStreamWriter(memFile.getOutputStream()));
+            writer.write(hookee+"\r\n");
+            writer.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }else if(sharedFile!=null) try {
             BufferedWriter writer=new BufferedWriter(new FileWriter(sharedFile));
             writer.write(hookee);
             writer.flush();
