@@ -3,7 +3,6 @@ package monkeylord.XServer;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -12,25 +11,21 @@ import android.os.Bundle;
 import android.os.MemoryFile;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.List;
+
+import monkeylord.XServer.utils.netUtil;
 
 public class MainActivity extends Activity {
     SharedPreferences sp;
@@ -45,7 +40,7 @@ public class MainActivity extends Activity {
     private static boolean isModuleActive() {
         return false;
     }
-    private MemoryFile getFile(){ return null; }
+    private File getFile(){ return null; }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +52,9 @@ public class MainActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         super.setContentView(layout, param);
         sp = getSharedPreferences("XServer", MODE_PRIVATE);
-        memFile=getFile();
+        sharedFile=getFile();
+        hookee = sp.getString("targetApp", "com.");
+        /*
         try {
             if(memFile!=null)hookee = new BufferedReader(new InputStreamReader(memFile.getInputStream())).readLine();
             else if(sharedFile!=null)hookee = new BufferedReader(new FileReader(sharedFile)).readLine();
@@ -65,6 +62,7 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             hookee = sp.getString("targetApp", "com.");
         }
+        */
         //isReg = sp.getBoolean("isReg", false);
         final AppAdapter appAdapter = new AppAdapter(this);
         final AlertDialog selector = new AlertDialog.Builder(this)
@@ -134,9 +132,11 @@ public class MainActivity extends Activity {
         editor.putString("targetApp", hookee);
         //editor.putBoolean("isReg", isReg);
         editor.commit();
+        hookee=new netUtil("http://127.0.0.1:7999/?targetapp="+hookee,"").getRet();
         if(memFile!=null)try{
             BufferedWriter writer=new BufferedWriter(new OutputStreamWriter(memFile.getOutputStream()));
-            writer.write(hookee+"\r\n");
+            writer.write(hookee.trim());
+            writer.newLine();
             writer.flush();
         }catch (IOException e){
             e.printStackTrace();

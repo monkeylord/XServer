@@ -13,9 +13,14 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
@@ -24,6 +29,8 @@ import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import monkeylord.XServer.utils.NanoHTTPD;
+import monkeylord.XServer.utils.netUtil;
 
 
 /*
@@ -40,7 +47,6 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     public static XModuleResources res;
     static File sharedFile;
     static MemoryFile memFile;
-    //static FileDescriptor sharedfd;
     String targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "monkeylord.demoapp");
     String packageName;
     Boolean isFirstApplication;
@@ -49,15 +55,24 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
+
         //告知界面模块已启动
         if (loadPackageParam.packageName.equals("monkeylord.xserver")) {
             XposedHelpers.findAndHookMethod("monkeylord.XServer.MainActivity", loadPackageParam.classLoader, "isModuleActive", XC_MethodReplacement.returnConstant(true));
-            XposedHelpers.findAndHookMethod("monkeylord.XServer.MainActivity", loadPackageParam.classLoader, "getFile", XC_MethodReplacement.returnConstant(memFile));
+            XposedHelpers.findAndHookMethod("monkeylord.XServer.MainActivity", loadPackageParam.classLoader, "getFile", XC_MethodReplacement.returnConstant(sharedFile));
         }
-        //刷新目标APP名称
-        //从共享文件中刷新目标APP名称（For Android 7.0, MIUI compatible）
-        targetApp=new BufferedReader(new InputStreamReader(memFile.getInputStream())).readLine();
+        //System Server方法（这次应该兼容MIUI了）
+        if(loadPackageParam.packageName.equals("android")){
+            systemServer();return;
+        }else targetApp=new netUtil("http://127.0.0.1:7999/","").getRet();
         //XposedBridge.log(targetApp);
+        //刷新目标APP名称
+        //从共享文件中刷新目标APP名称（For Android 7.0, MIUI not compatible, sad...）
+        /*
+        String memApp=new BufferedReader(new InputStreamReader(memFile.getInputStream())).readLine().trim();
+        if(memApp.length()!=0)targetApp=memApp;
+        else memFile.writeBytes(targetApp.getBytes(),0,0,targetApp.length());
+        */
         //从共享文件中刷新目标APP名称（For Android 7.0）
         //targetApp=new BufferedReader(new FileReader(sharedFile)).readLine();
         //从XPreferences中刷新目标APP名称（Unavailable in Android 7.0）
@@ -68,6 +83,24 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         new XServer(8000);
         new XServer(Process.myPid());
         XposedBridge.log("XServer Listening...");
+    }
+    private void systemServer(){
+        try {
+            new NanoHTTPD(7999){
+                @Override
+                public Response serve(IHTTPSession session) {
+                    String tapp=session.getParms().get("targetapp");
+                    //XposedBridge.log("req:"+tapp);
+                    if(tapp!=null&&!tapp.equals(""))targetApp=tapp;
+                    return newFixedLengthResponse(targetApp);
+                }
+            }.start();
+            XposedBridge.log("XServer SystemServer Started");
+            XposedBridge.log("XServer default target:"+targetApp);
+        }catch (Exception e){
+            XposedBridge.log("XServer SystemServer Fail");
+        }
+
     }
 
 
@@ -82,19 +115,28 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     @Override
     public void initZygote(StartupParam startupParam) throws Throwable {
         res = XModuleResources.createInstance(startupParam.modulePath, null);
-
-        BufferedWriter writer;
+        int Approach=0;
         //内存文件Approach
-        memFile=new MemoryFile("xserver",512);
-        memFile.allowPurging(false);
-        targetApp=targetApp+"\r\n";
-        memFile.writeBytes(targetApp.getBytes(),0,0,targetApp.length());
+        /*
+        try {
+            memFile=new MemoryFile("xserver",512);
+            memFile.allowPurging(false);
+            targetApp=targetApp+"\r\n";
+            memFile.writeBytes(targetApp.getBytes(), 0, 0, targetApp.length());
+        }catch (IOException e){
+            XposedBridge.log("MemoryFile 写入异常");
+        }
+        */
         //临时文件Approach
         /*
-        sharedFile=new File("/data/local/tmp/xserver");
+        BufferedWriter writer;
+        String filePath="/data/data/"+this.getClass().getPackage().getName().toLowerCase()+"/XServer.conf";
+        XposedBridge.log(filePath);
+
+        sharedFile=new File(filePath);
         if (!sharedFile.exists()){
             sharedFile.createNewFile();
-            Runtime.getRuntime().exec("chmod 777 /data/local/tmp/xserver");
+            Runtime.getRuntime().exec("chmod 777 "+filePath);
         }
         //targetApp=new BufferedReader(new FileReader(sharedFile)).readLine();
         //if(targetApp==null)targetApp="com.example";
