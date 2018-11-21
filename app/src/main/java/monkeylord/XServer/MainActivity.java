@@ -4,11 +4,13 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.MemoryFile;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
+import monkeylord.XServer.utils.TargetService;
 import monkeylord.XServer.utils.netUtil;
 
 public class MainActivity extends Activity {
@@ -125,6 +128,8 @@ public class MainActivity extends Activity {
         layout.addView(selectApp);
         layout.addView(tips);
         update();
+        //启动目标指示服务
+        startService(new Intent(this,TargetService.class));
     }
 
     public void update() {
@@ -132,7 +137,6 @@ public class MainActivity extends Activity {
         editor.putString("targetApp", hookee);
         //editor.putBoolean("isReg", isReg);
         editor.commit();
-        hookee=new netUtil("http://127.0.0.1:7999/?targetapp="+hookee,"").getRet();
         if(memFile!=null)try{
             BufferedWriter writer=new BufferedWriter(new OutputStreamWriter(memFile.getOutputStream()));
             writer.write(hookee.trim());

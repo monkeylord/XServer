@@ -9,7 +9,9 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -21,6 +23,7 @@ public class netUtil extends Thread {
     String postData;
     String ret;
     String error;
+    List<Proxy> proxys;
 
     public netUtil(String URL, String data) {
         try {
@@ -28,10 +31,18 @@ public class netUtil extends Thread {
             ret = new String(postData);
             url = new URL(URL);
             error = null;
+            proxys = ProxySelector.getDefault().select(new URI("http://www.baidu.com"));
         } catch (MalformedURLException e) {
             error = "MalformedURLException";
+        } catch (URISyntaxException e) {
+            error = "URISyntaxException";
         }
 
+    }
+    public netUtil(String URL, String data,List<Proxy> proxies) {
+        this(URL,data);
+        if(proxies==null)proxys=new ArrayList<Proxy>();
+        else proxys=proxies;
     }
 
     public void run() {
@@ -59,7 +70,6 @@ public class netUtil extends Thread {
 
     private void doPost() {
         try {
-            List<Proxy> proxys = ProxySelector.getDefault().select(new URI("http://www.baidu.com"));
             //proxys.add(new Proxy(Proxy.Type.HTTP,new InetSocketAddress("127.0.0.1",8080)));
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection((proxys.size()>0)?proxys.get(0):Proxy.NO_PROXY);
             httpURLConnection.setRequestMethod("POST");// 提交模式

@@ -21,6 +21,7 @@ import java.io.Writer;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
@@ -63,8 +64,9 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         }
         //System Server方法（这次应该兼容MIUI了）
         if(loadPackageParam.packageName.equals("android")){
-            systemServer();return;
-        }else targetApp=new netUtil("http://127.0.0.1:7999/","").getRet();
+            //systemServer();
+            return;
+        }else targetApp=new netUtil("http://127.0.0.1:7999/","",null).getRet();
         //XposedBridge.log(targetApp);
         //刷新目标APP名称
         //从共享文件中刷新目标APP名称（For Android 7.0, MIUI not compatible, sad...）
@@ -84,25 +86,6 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         new XServer(Process.myPid());
         XposedBridge.log("XServer Listening...");
     }
-    private void systemServer(){
-        try {
-            new NanoHTTPD(7999){
-                @Override
-                public Response serve(IHTTPSession session) {
-                    String tapp=session.getParms().get("targetapp");
-                    //XposedBridge.log("req:"+tapp);
-                    if(tapp!=null&&!tapp.equals(""))targetApp=tapp;
-                    return newFixedLengthResponse(targetApp);
-                }
-            }.start();
-            XposedBridge.log("XServer SystemServer Started");
-            XposedBridge.log("XServer default target:"+targetApp);
-        }catch (Exception e){
-            XposedBridge.log("XServer SystemServer Fail");
-        }
-
-    }
-
 
     private void gatherInfo(XC_LoadPackage.LoadPackageParam loadPackageParam) {
         packageName = loadPackageParam.packageName;
@@ -115,8 +98,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     @Override
     public void initZygote(StartupParam startupParam) throws Throwable {
         res = XModuleResources.createInstance(startupParam.modulePath, null);
-        int Approach=0;
-        //内存文件Approach
+        //内存文件
         /*
         try {
             memFile=new MemoryFile("xserver",512);
@@ -127,7 +109,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
             XposedBridge.log("MemoryFile 写入异常");
         }
         */
-        //临时文件Approach
+        //临时文件
         /*
         BufferedWriter writer;
         String filePath="/data/data/"+this.getClass().getPackage().getName().toLowerCase()+"/XServer.conf";
