@@ -1,5 +1,6 @@
 package monkeylord.XServer;
 
+import android.content.BroadcastReceiver;
 import android.content.pm.ApplicationInfo;
 import android.content.res.XModuleResources;
 import android.os.MemoryFile;
@@ -48,7 +49,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     public static XModuleResources res;
     static File sharedFile;
     static MemoryFile memFile;
-    String targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "monkeylord.demoapp");
+    String targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "MadMode");
     String packageName;
     Boolean isFirstApplication;
     String processName;
@@ -66,8 +67,12 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         if(loadPackageParam.packageName.equals("android")){
             //systemServer();
             return;
-        }else targetApp=new netUtil("http://127.0.0.1:7999/","",null).getRet();
-        //XposedBridge.log(targetApp);
+        }else {
+            String App=new netUtil("http://127.0.0.1:7999/","",null).getRet();
+            if(App.length()>0)targetApp=App;
+        }
+        XposedBridge.log("[XServer Debug]:ThisApp->"+loadPackageParam.packageName);
+        XposedBridge.log("[XServer Debug]:TargetApp->"+targetApp);
         //刷新目标APP名称
         //从共享文件中刷新目标APP名称（For Android 7.0, MIUI not compatible, sad...）
         /*
@@ -79,7 +84,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         //targetApp=new BufferedReader(new FileReader(sharedFile)).readLine();
         //从XPreferences中刷新目标APP名称（Unavailable in Android 7.0）
         //targetApp = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer").getString("targetApp", "monkeylord.demoapp");
-        if (!loadPackageParam.packageName.equals(targetApp)) return;
+        if (!targetApp.equals("MadMode")&&!loadPackageParam.packageName.equals(targetApp)) return;
         gatherInfo(loadPackageParam);
         //启动XServer
         new XServer(8000);

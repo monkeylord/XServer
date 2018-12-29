@@ -110,6 +110,7 @@ public class MainActivity extends Activity {
                 "XServer will listen on 2 ports when target app start: 8000 and PID \n" +
                 "To connect XServer, ADB command can be used like:\n" +
                 "   adb forward tcp:8000 tcp:8000\n" +
+                "Or" +
                 "   adb forward tcp:8000 tcp:[PID]\n" +
                 "Then you can open http://127.0.0.1:8000 in browser to interact with XServer");
         tips.setTextSize(15f);
