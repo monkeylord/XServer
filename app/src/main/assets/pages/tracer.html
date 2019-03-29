@@ -26,7 +26,7 @@
     var messages="";
     var timer;
     if ('WebSocket' in window) {
-        websocket = new WebSocket(document.origin.replace("http","ws"));
+        websocket = new WebSocket(document.location.origin.replace("http","ws"));
     }
     else {
         alert('Current Browser Not support websocket')

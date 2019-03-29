@@ -4,13 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.MemoryFile;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -19,16 +16,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.List;
-
-import monkeylord.XServer.utils.TargetService;
-import monkeylord.XServer.utils.netUtil;
 
 public class MainActivity extends Activity {
     SharedPreferences sp;
@@ -36,14 +25,16 @@ public class MainActivity extends Activity {
     boolean isReg;
     TextView info;
     EditText appname;
-    File sharedFile=null;
-    MemoryFile memFile=null;
     //CheckBox regEx;
 
     private static boolean isModuleActive() {
         return false;
     }
-    private File getFile(){ return null; }
+
+    public void makeWorldReadable(){
+        new File("/data/data/" + XServer.class.getPackage().getName().toLowerCase()).setExecutable(true, false);
+        new File("/data/data/" + XServer.class.getPackage().getName().toLowerCase() + "/shared_prefs/XServer.xml").setReadable(true, false);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,18 +45,9 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         layout.setOrientation(LinearLayout.VERTICAL);
         super.setContentView(layout, param);
-        sp = getSharedPreferences("XServer", MODE_PRIVATE);
-        sharedFile=getFile();
+        sp = getSharedPreferences("XServer", isModuleActive()?MODE_WORLD_READABLE:MODE_PRIVATE);
+        makeWorldReadable();
         hookee = sp.getString("targetApp", "com.");
-        /*
-        try {
-            if(memFile!=null)hookee = new BufferedReader(new InputStreamReader(memFile.getInputStream())).readLine();
-            else if(sharedFile!=null)hookee = new BufferedReader(new FileReader(sharedFile)).readLine();
-            else hookee = sp.getString("targetApp", "com.");
-        } catch (Exception e) {
-            hookee = sp.getString("targetApp", "com.");
-        }
-        */
         //isReg = sp.getBoolean("isReg", false);
         final AppAdapter appAdapter = new AppAdapter(this);
         final AlertDialog selector = new AlertDialog.Builder(this)
@@ -129,8 +111,6 @@ public class MainActivity extends Activity {
         layout.addView(selectApp);
         layout.addView(tips);
         update();
-        //启动目标指示服务
-        startService(new Intent(this,TargetService.class));
     }
 
     public void update() {
@@ -138,20 +118,6 @@ public class MainActivity extends Activity {
         editor.putString("targetApp", hookee);
         //editor.putBoolean("isReg", isReg);
         editor.commit();
-        if(memFile!=null)try{
-            BufferedWriter writer=new BufferedWriter(new OutputStreamWriter(memFile.getOutputStream()));
-            writer.write(hookee.trim());
-            writer.newLine();
-            writer.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }else if(sharedFile!=null) try {
-            BufferedWriter writer=new BufferedWriter(new FileWriter(sharedFile));
-            writer.write(hookee);
-            writer.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         info.setText("Target App:\r\n" + hookee);
         appname.setText(hookee);
         //regEx.setChecked(isReg);

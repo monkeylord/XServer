@@ -27,11 +27,6 @@
             android:name="xposeddescription"
             android:value="Dynamic trace/invoke via http-server" />
 
-        <service
-            android:name=".utils.TargetService"
-            android:enabled="true"
-            android:exported="true"
-            android:persistent="true"></service>
     </application>
 
 </manifest>
