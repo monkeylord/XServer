@@ -22,6 +22,7 @@ import monkeylord.XServer.api.wsTracerNew;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.objectparser.ByteArrayParser;
 import monkeylord.XServer.objectparser.IntParser;
+import monkeylord.XServer.objectparser.StoredObjectParser;
 import monkeylord.XServer.objectparser.StringParser;
 import monkeylord.XServer.utils.DexHelper;
 import monkeylord.XServer.utils.NanoWSD;
@@ -38,12 +39,15 @@ public class XServer extends NanoWSD {
     public XServer(int port, Hashtable<String, Operation> route) {
         super(port);
         //注册对象序列化/反序列化处理器
+        parsers.put("general", new StoredObjectParser());
         parsers.put("string", new StringParser());
         parsers.put("int", new IntParser());
+        parsers.put("Ljava.lang.Integer;", new IntParser());
         parsers.put("byte", new ByteArrayParser());
         parsers.put("Ljava.lang.String;", new StringParser());
         parsers.put("I", new IntParser());
         parsers.put("[B", new ByteArrayParser());
+
         //注册WebSocket路由
         wsroute.put("/", new wsTracer());
         wsroute.put("/methodview", new wsMethodView());

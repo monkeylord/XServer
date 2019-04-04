@@ -5,6 +5,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.res.XModuleResources;
 import android.os.Build;
 import android.os.Process;
+import android.util.Log;
+
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XC_MethodReplacement;
@@ -44,7 +46,8 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         //告知界面模块已启动，同时解除Android N以上对MODE_WORLD_READABLE的限制
         if (loadPackageParam.packageName.equals("monkeylord.xserver")) {
             XposedHelpers.findAndHookMethod("monkeylord.XServer.MainActivity", loadPackageParam.classLoader, "isModuleActive", XC_MethodReplacement.returnConstant(true));
-            if (Build.VERSION.SDK_INT >= 26)XposedHelpers.findAndHookMethod("android.app.ContextImpl", loadPackageParam.classLoader, "checkMode",int.class, XC_MethodReplacement.returnConstant(null));
+            if (Build.VERSION.SDK_INT >= 24)XposedHelpers.findAndHookMethod("android.app.ContextImpl", loadPackageParam.classLoader, "checkMode",int.class, XC_MethodReplacement.returnConstant(null));
+            XposedBridge.log("XServer handleLoadPackage: "+ Build.VERSION.SDK_INT);
         }
         //获取目标包名
         sPrefs.reload();

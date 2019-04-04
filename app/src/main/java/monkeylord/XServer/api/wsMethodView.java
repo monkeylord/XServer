@@ -176,7 +176,7 @@ public class wsMethodView implements XServer.wsOperation {
                 json.put("method", Utils.getJavaName(myws.m));
                 if(thisObject!=null)json.put("this",ObjectHandler.saveObject(thisObject));
                 ArrayList params=new ArrayList();
-                for (Object arg:args) {
+                if(args!=null)for (Object arg:args) {
                     params.add(ObjectHandler.saveObject(arg));
                 }
                 json.put("params",params.toArray());
@@ -187,7 +187,7 @@ public class wsMethodView implements XServer.wsOperation {
                 json.put("stack",stacks);
                 param.setResult(
                         ObjectHandler.parseObject(
-                                new netUtil(myws.server + "/invoke2", new JSONObject(json).toString()).getRet()
+                                new netUtil(myws.server + "/invoke2", new JSONObject(json).toString(2)).getRet()
                         )
                 );
             }

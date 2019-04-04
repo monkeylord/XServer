@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
 
+import monkeylord.XServer.XServer;
 import monkeylord.XServer.objectparser.GenericParser;
 import monkeylord.XServer.objectparser.StoredObjectParser;
 import monkeylord.XServer.utils.Utils;
@@ -22,18 +23,9 @@ public class ObjectHandler {
 
     public static String saveObject(Object obj){
         if(obj==null)return "Null";
-        if(parsers.get(Utils.getTypeSignature(obj.getClass()))!=null){
-            return Utils.getTypeSignature(obj.getClass())+"#"+parsers.get(Utils.getTypeSignature(obj.getClass())).generate(obj);
-        }else{
-            String objname;
-            try{
-                objname=""+obj.hashCode();
-            }catch (Exception e){
-                objname= ""+new Random().nextLong();
-            }
-            storeObject(obj,""+objname);
-            return Utils.getTypeSignature(obj.getClass())+"#"+objname;
-        }
+        XServer.ObjectParser parser = parsers.get(Utils.getTypeSignature(obj.getClass()));
+        if(parser==null)parser=parsers.get("general");
+        return Utils.getTypeSignature(obj.getClass())+"#"+parser.generate(obj);
     }
 
     public static Object getObject(String name) {
@@ -46,8 +38,9 @@ public class ObjectHandler {
         if(Object.indexOf("#")<0)return null;
         String type=Object.substring(0,Object.indexOf("#"));
         String raw=Object.substring(Object.indexOf("#")+1);
-        if(parsers.get(type)!=null)return parsers.get(type).parse(raw);
-        else return new StoredObjectParser().parse(raw);
+        XServer.ObjectParser parser = parsers.get(type);
+        if(parser==null)parser=parsers.get("general");
+        return parser.parse(raw);
     }
 
     public static Object[] getObjects(String name, String type) {
