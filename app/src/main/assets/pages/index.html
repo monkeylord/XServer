@@ -15,7 +15,7 @@
 <p>It can be used to locate/bypass network traffic encryption/sign.</p>
 <p>Some Application may have several processes.To monitor specified process, you can use <i>'adb
     forward tcp:8000 tcp:[pid]'</i> instead of 'adb forward tcp:8000 tcp:8000'</p>
-<h1>Request Infomations:</h1>
+<h2>Request Infomations:</h2>
 <details>
     <summary>Available Operations:</summary>
     <#list opList as op>
@@ -56,12 +56,15 @@
         </#list>
     </details>
 </#if>
-<h1>Known Classes:</h1>
+<h1>Memory</h1>
+<p><a href="/memory">Memory Editor</a> allows you read/write/dump application's memory.</p>
+<p>It can be used to extract .dex or .so file in the runtime.</p>
+<h1>View/Monitor Known Classes:</h1>
 <form action=/tracer method="post" target="_blank">
     <p>
         Filter:<input id="text" type="text" name="filter" onchange="refresh()"/>
     </p>
-    <input type=submit value='Begin MassMonitoring(may not stable)'>
+    <input type=submit value='Begin MassMonitoring\r\n(may not stable if provided no parameters)'>
 </form>
 <div id=classes>
 </div>

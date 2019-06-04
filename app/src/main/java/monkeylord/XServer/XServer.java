@@ -14,6 +14,7 @@ import freemarker.template.TemplateException;
 import monkeylord.XServer.api.ClassView;
 import monkeylord.XServer.api.Invoke;
 import monkeylord.XServer.api.Invoke_New;
+import monkeylord.XServer.api.MemoryView;
 import monkeylord.XServer.api.MethodView;
 import monkeylord.XServer.api.Tracer;
 import monkeylord.XServer.api.wsMethodView;
@@ -60,6 +61,7 @@ public class XServer extends NanoWSD {
         XServer.route.put("/tracer", new Tracer());
         XServer.route.put("/invoke", new Invoke());
         XServer.route.put("/invoke2", new Invoke_New());
+        XServer.route.put("/memory", new MemoryView());
         try {
             //启动监听
             start(0, false);

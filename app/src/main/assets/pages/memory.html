@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MemoryReader</title>
+</head>
+<body>
+<details>
+    <summary>Memory Maps</summary>
+    <#list maps as map>
+        <p>${map}</p>
+    </#list>
+</details>
+<h1>Memory Editor:</h1>
+<p>Address:<input id="addr" type="text"/></p>
+<p>Count  :<input id="count" type="text"/></p>
+
+<input id="read" type="button" value="Read" onclick="readMem()"/>
+<input id="write" type="button" value="Write" onclick="writeMem()"/>
+<input id="dump" type="button" value="Dump" onclick="dumpMem()"/>
+<p></p>
+<textarea id="mem" rows="8" cols="32"></textarea>
+</body>
+<script type="text/javascript">
+function readMem(){
+    var addr = parseInt(document.getElementById("addr").value, 16);
+    var count = parseInt(document.getElementById("count").value);
+    xml = new XMLHttpRequest();
+    xml.open("GET","/memory?op=read&addr="+addr+"&count="+count, false);
+    xml.send();
+    document.getElementById("mem").value=xml.responseText;
+}
+function dumpMem(){
+    var addr = parseInt(document.getElementById("addr").value, 16);
+    var count = parseInt(document.getElementById("count").value);
+    xml = new XMLHttpRequest();
+    xml.open("GET","/memory?op=dump&addr="+addr+"&count="+count, false);
+    xml.send();
+    document.getElementById("mem").value=xml.responseText;
+}
+
+// Does not work.
+function writeMem(){
+    var addr = parseInt(document.getElementById("addr").value, 16);
+    var count = parseInt(document.getElementById("count").value);
+    xml = new XMLHttpRequest();
+    xml.open("POST","/memory?op=write&addr="+addr, false);
+    xml.send(document.getElementById("mem").value);
+    document.getElementById("mem").value=xml.responseText;
+}
+
+</script>
+</html>
