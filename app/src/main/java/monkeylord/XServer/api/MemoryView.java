@@ -26,11 +26,11 @@ public class MemoryView implements XServer.Operation {
                         return "Dumped at /sdcard/XServer.dump";
                     case "read":
                         byte[] bytes=MemoryHandler.readMemory(Long.parseLong(parms.get("addr")),Integer.parseInt(parms.get("count")));
-                        return bytesToHexString(bytes);
+                        return new String(encodeHex(bytes));
                     case "write":
                         MemoryHandler.writeMemory(Long.parseLong(parms.get("addr")),hexStringToBytes(files.get("postData")));
                         byte[] bytes_res=MemoryHandler.readMemory(Long.parseLong(parms.get("addr")),hexStringToBytes(files.get("postData")).length);
-                        return bytesToHexString(bytes_res);
+                        return new String(encodeHex(bytes_res));
                     default:
                         return "";
                 }
@@ -66,6 +66,19 @@ public class MemoryView implements XServer.Operation {
         }
         return stringBuffer.toString();
     }
+
+    private static final char[] DIGITS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    public static char[] encodeHex(byte[] data) {
+        int l = data.length;
+        char[] out = new char[l << 1];
+        int i = 0;
+        for (int j = 0; i < l; i++) {
+            out[(j++)] = DIGITS[((0xF0 & data[i]) >>> 4)];
+            out[(j++)] = DIGITS[(0xF & data[i])];
+        }
+        return out;
+    }
+
     public static byte[] hexStringToBytes(String hexString) {
         if (hexString == null || hexString.equals("")) {
             return null;

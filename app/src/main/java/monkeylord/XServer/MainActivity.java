@@ -8,8 +8,10 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -152,7 +154,7 @@ public class MainActivity extends Activity {
             //调整了一下应用选择器的外观，感谢@smartdone大佬建议和帮助
             //https://github.com/monkeylord/XServer/pull/1/commits/ab718e13a8ef1486f43e1023f62e312b3ff10307
             LinearLayout linearLayout = new LinearLayout(context);
-            linearLayout.setLayoutParams(new LinearLayout.LayoutParams(
+            linearLayout.setLayoutParams(new AbsListView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT));
             linearLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -182,6 +184,7 @@ public class MainActivity extends Activity {
             textLayout.addView(app_package_name);
 
             linearLayout.addView(textLayout);
+            Log.e("XServer", "Selector Ready");
             return linearLayout;
         }
     }
