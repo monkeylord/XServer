@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass Monitor</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+          name='viewport'/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        ul {
+            display: block;
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .lv3Checks{
+            display: block; float: left; clear: left; width: 15px; height: 15px;
+        }
+    </style>
+</head>
+<body>
+<nav id="control" style="position:fixed;top:0px;left:0px;background: white;width: -webkit-fill-available;">
+    Filters/Controls
+    <!--
+    Class Filter:<input id="classFilter" type="text" value=".*"/>
+    Method Filter(RegEx):<input id="methodFilter" type="text" value=".*"/>
+    Thread Filter:<input id="threadFilter" type="text" value="0"/>
+    -->
+    <button id="clear" onclick="stop()">Clear Logs</button>
+    <button id="loadMethods" onclick="getMths()" :disabled="allClzs.length==0">Load All Methods</button>
+    <button id="pause" onclick="pause()" disabled=true>Pause</button>
+    <a id="statistic">Resolved Classes: {{resolvedClzs.length}}/{{allClzs.length}} | Methods Found: {{(Object.keys(allMths).length)}} | Hooked Methods: {{(hookedMths.length==0)? "None/Unknown" : hookedMths.length}}</a>
+    <br/>
+    <details open>
+        <summary id="classTree">Method Trace Selector    <button id="redraw" onclick='genTree($("#classes"))' style='display: none;'>Redraw Classes Tree</button></summary>
+        Class Filter(RegEx):<input id="classFilter" type="text" v-model="clzFilter"/>
+        Method Filter(RegEx):<input id="methodFilter" type="text" v-model="mtdFilter"/>
+        <button id="loadMethod" @click="loadMethod">Load Methods for Matched Classes</button>
+        <button id="hook" @click="hookAll">Hook All Known Matched</button>
+        <button id="unhook" @click="unhookAll">Unhook All Known Matched</button>
+        <input type="checkbox" v-model:checked="renderClassTree"><label>Display Class Tree</label>
+        <p>Matched Classes:{{selectedClzs.length}} | Matched Methods:{{selectedMtds.length}}</p>
+        <p v-if="loading!=0">Loading...({{loading}})</p>
+        <ul id="classes" style="overflow-y: scroll;overflow-x: hidden;max-height: 600px;">
+            <classTree v-if="renderClassTree" scope="" :classes="selectedClzs"></classTree>
+        </ul>
+
+    </details>
+    <hr/>
+</nav>
+
+<div id="message" style="padding-top: 60px;">
+    <hookmsg v-for="message in children" :message="message"></hookmsg>
+</div>
+
+<template id="classTreeTemplate">
+    <ul>
+        <a>{{scope.split(".").pop()}}</a>
+        <classtree v-for="(clzs,scp) in scopedClasses" :scope="scp" :classes="clzs"></classtree>
+        <p v-for="method in methods()" style="color: green;">
+            <input type="checkbox" class="checkbox" :checked="methodHooked(method)" :id="method" @click="doHook"/>
+            {{method}}
+        </p>
+    </ul>
+</template>
+
+<template id="hookMessageTemplate">
+    <details open style="padding-left: 5px;border-left: 5px outset;">
+        <summary>
+            [{{message.callData.tid}}]
+            <a :href="'/methodview?javaname=' + message.method">{{message.method}}</a>
+        </summary>
+        <argument v-for="(arg, i) in message.callData.params" :index="i" :argument="arg"></argument>
+        <hookmsg v-for="message in message.children" :message="message"></hookmsg>
+        <result v-if="message.returned" :result="message.resultData.result"></result>
+    </details>
+</template>
+
+<template id="argument">
+    <dl>
+        <dt>Argument {{index}} :</dt>
+        <dd>{{argument}}</dd>
+    </dl>
+</template>
+
+<template id="result">
+    <dl>
+        <dt>Returned:</dt>
+        <dd>{{result}}</dd>
+    </dl>
+</template>
+
+</body>
+<script type="text/javascript" src="./js/vue.js"></script>
+<script type="text/javascript">
+
+var controlData = {
+    clzFilter: '${filter!}',
+    mtdFilter: '.*',
+    allClzs: [],
+    allMths: [],
+    clzMths: {},
+    hookedMths: [],
+    loading: 0,
+    renderClassTree: true
+}
+
+var hookMessage = {
+    parent: null,
+    children: [],
+    isRoot: true
+}
+
+var currentMessage = hookMessage
+
+var argumentView = Vue.component('argument', {
+    props: ["index","argument"],
+    template: document.getElementById("argument")
+})
+
+var resultView = Vue.component('result', {
+    props: ["result"],
+    template: document.getElementById("result")
+})
+
+var hookmsgCmp = Vue.component('hookmsg', {
+    props: ["message"],
+    template: document.getElementById("hookMessageTemplate")
+})
+
+var classtreeCmp = Vue.component('classtree', {
+  // 声明 props
+  props: ['scope','classes'],
+  // 同样也可以在 vm 实例中像 "this.message" 这样使用
+  template: document.getElementById("classTreeTemplate"),
+  computed:{
+    scopedClasses: function(){
+        var classes = this.classes.map(clz=>{
+            return {
+                scope: clz.class.replace(this.scope,""),
+                class: clz
+            }
+        })
+        var scpClzs = {}
+        classes.forEach(clz=>{
+            // 生成子树
+            if(clz.scope.split(".").length>1){
+                // 若存在子包
+                var newScope = (this.scope=="")?clz.scope.split(".")[0]:this.scope + "." + clz.scope.split(".")[1]
+                scpClzs[newScope] = (scpClzs[newScope])?scpClzs[newScope].concat(clz.class):[clz.class]
+            }
+        })
+        return scpClzs
+    }
+  },
+  methods:{
+    methods: function(){
+        //console.log(this.scope)
+        if(controlData.clzMths[this.scope])return controlData.clzMths[this.scope].filter(method=>method.split(";->")[1].match(controlData.mtdFilter))
+        else return []
+    },
+    methodHooked:function(method){
+        return controlData.hookedMths.indexOf(method)!=-1
+    },
+    doHook:function(item){
+        console.log(item)
+        var method = item.target.id
+        if(controlData.hookedMths.indexOf(method)!=-1){
+            // unhook
+            doUnhookMethods([method])
+        }else{
+            // hook
+            doHookMethods([method])
+        }
+    }
+  }
+})
+
+var hookInfo = {
+  template: '<h1>HookInfo!</h1>'
+}
+
+var nav = new Vue({
+  el: '#control',
+  data: controlData,
+  computed: {
+      selectedClzs: function(){
+          return this.allClzs.filter(clz=>clz.class.match(this.clzFilter))
+      },
+      selectedMtds:function(){
+          return this.allMths.filter(method=>{
+              var chunks = method.split(";->")
+              var clz = chunks[0].slice(1)
+              var mname = chunks[1]
+              return clz.match(this.clzFilter) && mname.match(this.mtdFilter)
+          })
+      },
+      resolvedClzs:function(){
+          return this.allClzs.filter(clz=>clz.resolved)
+      }
+  },
+  methods:{
+      loadMethod:function(){
+          var selectedClzs = this.allClzs.filter(clz=>{
+              return (!clz.resolved) && (clz.class.match(this.clzFilter))
+          }).map(clz=>clz.class)
+          getMths(selectedClzs)
+      },
+      hookAll:function(){
+          var unhooked = this.allMths.filter(method=>{
+              var chunks = method.split(";->")
+              var clz = chunks[0].slice(1)
+              var mname = chunks[1]
+              return clz.match(this.clzFilter) && mname.match(this.mtdFilter) && this.hookedMths.indexOf(method)==-1
+          })
+          doHookMethods(unhooked)
+      },
+      unhookAll:function(){
+        var hooked = this.allMths.filter(method=>{
+              var chunks = method.split(";->")
+              var clz = chunks[0].slice(1)
+              var mname = chunks[1]
+              return clz.match(this.clzFilter) && mname.match(this.mtdFilter) && this.hookedMths.indexOf(method)!=-1
+          })
+        doUnhookMethods(hooked)
+      }
+  }
+})
+
+var msg = new Vue({
+  el: '#message',
+  data: hookMessage
+})
+
+</script>
+<script type="text/javascript">
+
+    /*
+        WebSocket代码
+
+        与XServer进行通信，收发各类消息
+    */
+    var websocket = null;
+    if ('WebSocket' in window) {
+        websocket = new WebSocket(document.location.origin.replace("http","ws")+"/wsTraceNew");
+        //websocket = new WebSocket("ws://127.0.0.1:8000/wsTraceNew");  // Local Debug
+    }
+    else {
+        alert('Current Browser Not support websocket')
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = (event)=>{alert("Connection Error!");console.log(event)}
+
+    //连接成功建立的回调方法
+    websocket.onopen = ()=>{
+        divMsg.innerHTML = "WebSocket Connected!"
+        // 立刻请求类清单
+        getAllClzs()
+        doHookMethods([])
+    }
+
+    //接收到消息的回调方法
+    websocket.onmessage = (event) => {
+        data=JSON.parse(event.data);
+        handleWSData(data);
+    }
+
+    //连接关闭的回调方法
+    websocket.onclose = function () {
+        setMessageInnerHTML("WebSocket Closed");
+        document.getElementById('loadMethods').disabled=true;
+        document.getElementById('clear').disabled=true;
+    }
+
+    // 关闭WebSocket连接
+    function closeWebSocket() {websocket.close();}
+    // 监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = closeWebSocket;
+
+    // 请求类清单
+    function getAllClzs(){
+        websocket.send('{"type":"classes"}')
+        controlData.loading++
+    }
+    // 请求类种的方法，参数为类名列表
+    function getMths(classes){
+        if(classes==null)classes=controlData.allClzs.map(clz=>clz.class)
+        // 5个5个获取，对于一些大型应用稳定一些，一次获取太多可能会OOM或者出其他错误，导致不能用。
+        if(classes.length>1000){
+            getMths(classes.slice(0,1000))
+            getMths(classes.slice(1000))
+        }else{
+            var json = {"type":"methods","classes":classes}
+            websocket.send(JSON.stringify(json))
+            controlData.loading++
+        }
+    }
+
+    /*
+        消息处理代码
+
+        这个Tracer的设计是把很多工作交给前端，所以UI这边也需要处理一些逻辑
+    */
+
+    var allClzs = [];
+    var allMths = {};
+    var sltdClzs = [];
+    var sltdMths = [];
+    var hookedMths = [];
+
+    function handleWSData(data){
+        console.log(data)
+        switch(data.type){
+            case "message": handleMsg(data);break;
+            case "hook": handleHookResponse(data);break;
+            case "unhook": handleUnhookResponse(data);break;
+            case "classes": handleClassesResponse(data);break;
+            case "methods": handleMethodsResponse(data);break;
+            case "call": handleCall(data);break;
+            case "result": handleResult(data);break;
+            default:console.log("Unknow Message:"+JSON.stringify(data));
+        }
+    }
+
+    function handleMsg(data){
+        console.log(data.message)
+    }
+    function handleHookResponse(data){
+        var difference = diff(hookedMths, data.hooks)
+        controlData.hookedMths = data.hooks;
+    }
+    function handleUnhookResponse(data){
+        var difference = diff(hookedMths, data.hooks)
+        controlData.hookedMths = data.hooks;
+    }
+    function handleClassesResponse(data){
+        controlData.loading--
+        if(data.classes.length>10000)controlData.renderClassTree=false
+        controlData.allClzs = data.classes.map(clz=>{
+            return {
+                class: clz,
+                resolved: false
+            }
+        });
+        //document.getElementById('loadMethods').disabled=false;
+    }
+    function handleMethodsResponse(data){
+        controlData.loading--
+        data.classes.forEach(clz=>{
+            controlData.allClzs.find(knownClz=>knownClz.class==clz).resolved = true
+        })
+        controlData.allMths = Array.from(new Set(controlData.allMths.concat(data.methods)))
+        data.methods.forEach(method=>{
+            var clz = method.split(';->')[0].slice(1).split('/').join('.')
+            controlData.clzMths[clz] = (controlData.clzMths[clz])?controlData.clzMths[clz].concat(method):[method]
+        })
+        forceUpdateClassTree()
+    }
+    function handleCall(data){
+        var newMessage = {
+            parent: currentMessage,
+            children: [],
+            method: data.method,
+            callData: data,
+            returned: false
+        }
+        currentMessage.children.push(newMessage)
+        currentMessage = newMessage
+        console.log("Call:"+JSON.stringify(data));
+    }
+    function handleResult(data){
+        var myCall = currentMessage;
+        while(myCall.method!=data.method && myCall.isRoot!=true)myCall = myCall.parent
+        if(myCall.isRoot){
+            console.log("Warning - Orphan Result:"+JSON.stringify(data));
+        }else{
+            if(myCall!=currentMessage){
+                console.log("Warning - unmatched result found.")
+            }
+            myCall.returned = true
+            myCall.resultData = data
+            currentMessage = myCall.parent
+            console.log("Result:"+JSON.stringify(data));
+        }
+    }
+
+    function forceUpdateClassTree(){
+        controlData.allClzs.push({class:"dummy"})
+        controlData.allClzs.pop()
+    }
+
+    function doHookMethods(methods){
+        if(methods.length>(100)){
+            doHookMethods(methods.slice(0,100))
+            doHookMethods(methods.slice(100))
+            return
+        }
+        var json = {"type":"hook","methods":methods}
+        console.log(JSON.stringify(json))
+        websocket.send(JSON.stringify(json))
+    }
+
+    function doUnhookMethods(methods){
+        var json = {"type":"unhook","methods":methods}
+        console.log(JSON.stringify(json))
+        websocket.send(JSON.stringify(json))
+    }
+
+    function doHookClasses(classes){
+        var json = {"type":"hookClass","classes":classes}
+        console.log(JSON.stringify(json))
+        websocket.send(JSON.stringify(json))
+    }
+
+    /*
+        UI控制代码
+
+        控制UI绘制，以及刷新控制
+        因为数据刷新量有时会很大，每次数据来了就刷新UI会导致UI响应极其鬼畜
+        所以需要缓存UI操作，在时间间隔后集中刷新
+    */
+    var divMsg = document.getElementById('message');
+    var divClzs = document.getElementById('classes');
+    var divMths = document.getElementById('methods');
+    var Datum={};
+    var messages="";
+    var timer;
+    function start(){
+        var cfilter=document.getElementById('classFilter').value;
+        var mfilter=document.getElementById('methodFilter').value;
+        var tfilter=document.getElementById('threadFilter').value;
+        var msg={"type":"hook","class":cfilter,"method":mfilter,"tid":tfilter}
+        websocket.send(JSON.stringify(msg));
+        document.getElementById('start').disabled=true;
+        document.getElementById('stop').disabled=false;
+        document.getElementById('pause').disabled=false;
+        document.getElementById('pause').innerHTML=="Pause"
+        timer=setInterval(function(){
+             document.getElementById('message').innerHTML = messages + '<br/>';
+             window.scrollTo(0,document.body.scrollHeight);
+             }, 1000);
+    }
+    function stop(){
+        var msg={"type":"unhookall","class":"","method":"","tid":""}
+        websocket.send(JSON.stringify(msg));
+        document.getElementById('start').disabled=false;
+        document.getElementById('stop').disabled=true;
+        document.getElementById('pause').disabled=true;
+        document.getElementById('pause').innerHTML=="Pause"
+        clearInterval(timer);
+    }
+    function pause(){
+        if(document.getElementById('pause').innerHTML=="Pause"){
+            clearInterval(timer);
+            document.getElementById('pause').innerHTML="Resume"
+        }else{
+            document.getElementById('pause').innerHTML="Pause"
+            timer=setInterval(function(){
+                document.getElementById('message').innerHTML = messages + '<br/>';
+                window.scrollTo(0,document.body.scrollHeight);
+            }, 1000);
+        }
+    }
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML) {
+        messages+=innerHTML;
+    }
+
+    function diff(origin, now){
+        var difference = {}
+        origin.concat(now).forEach((e, i, arr)=>{
+            if(arr.indexOf(e) === arr.lastIndexOf(e)){
+                if(origin.indexOf(e)==-1){
+                    difference[e] = true
+                }else{
+                    difference[e] = false
+                }
+            }
+        })
+        return difference
+    }
+
+</script>
+</html>

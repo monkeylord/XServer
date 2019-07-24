@@ -27,19 +27,19 @@ Xposed启动WebServer并提供方法注入能力，WebServer负责界面、RPC�
 
 #### 组件结构
 
-**Xposed入口：**XposedEntry
+Xposed入口：XposedEntry
 
-**应用选择器：**MainActivity
+应用选择器：MainActivity
 
-**WebServer：**XServer
+WebServer：XServer
 
-**业务逻辑处理：**handler
+业务逻辑处理：handler
 
-**对外接口：**api
+对外接口：api
 
-**其它功能组件：**utils、objectparser
+其它功能组件：utils、objectparser
 
-**资源文件：**各类freemarker页面（XServer用freemarker作为模板引擎）
+资源文件：各类freemarker页面（XServer用freemarker作为模板引擎）
 
 #### WebServer
 
@@ -47,7 +47,7 @@ Xposed启动WebServer并提供方法注入能力，WebServer负责界面、RPC�
 
 定义了两类API接口，HTTP API和WebSocket API（Operation、wsOperation），启动后加载的各类功能API都要在此注册。
 
-模板引擎则很简洁，在assets目录中编写模板，然后*XServer.render(data,templete)*即可。
+模板引擎则很简洁，在assets目录中编写模板，然后`XServer.render(data,templete)`即可。
 
 ### API组件
 
@@ -97,9 +97,13 @@ TODO：处理拦截
 
 #### 深度操作
 
-TODO：提供SO和APK加载
+目前包含MemoryHandler
 
-TODO：提供内存操作，利用SO实现
+提供内存操作，利用内部类Libcore实现，没有使用SO。
+
+可以用于Dump内存寻找Demo，也可以动态修改内存。
+
+TODO：提供SO和APK加载
 
 TODO：提供C层Hook，利用SO实现，或许可以使用substrate，或许可以现场gcc？
 

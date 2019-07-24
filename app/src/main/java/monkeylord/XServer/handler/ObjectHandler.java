@@ -24,7 +24,13 @@ public class ObjectHandler {
     public static String saveObject(Object obj){
         if(obj==null)return "Null";
         XServer.ObjectParser parser = parsers.get(Utils.getTypeSignature(obj.getClass()));
-        if(parser==null)parser=parsers.get("general");
+        if(parser==null)parser=parsers.get("store");
+        return Utils.getTypeSignature(obj.getClass())+"#"+parser.generate(obj);
+    }
+    public static String briefObject(Object obj){
+        if(obj==null)return "Null";
+        XServer.ObjectParser parser = parsers.get(Utils.getTypeSignature(obj.getClass()));
+        if(parser==null)parser=parsers.get("generic");
         return Utils.getTypeSignature(obj.getClass())+"#"+parser.generate(obj);
     }
 
@@ -39,7 +45,7 @@ public class ObjectHandler {
         String type=Object.substring(0,Object.indexOf("#"));
         String raw=Object.substring(Object.indexOf("#")+1);
         XServer.ObjectParser parser = parsers.get(type);
-        if(parser==null)parser=parsers.get("general");
+        if(parser==null)parser=parsers.get("store");
         return parser.parse(raw);
     }
 

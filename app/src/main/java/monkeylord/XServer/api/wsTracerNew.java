@@ -1,18 +1,25 @@
 package monkeylord.XServer.api;
 
+import android.os.Process;
+import android.util.Log;
+
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodHook.Unhook;
 import de.robv.android.xposed.XposedBridge;
 import monkeylord.XServer.XServer;
 import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.ClassHandler;
 import monkeylord.XServer.handler.MethodHandler;
+import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.utils.DexHelper;
 import monkeylord.XServer.utils.NanoHTTPD;
 import monkeylord.XServer.utils.NanoWSD;
@@ -20,76 +27,132 @@ import monkeylord.XServer.utils.Utils;
 
 //MassTracer的WebSocket处理重构，交互式。
 //TODO 完成增删改查，兼容之前接口，然后替换。
-public class wsTracerNew extends XC_MethodHook implements XServer.wsOperation {
-    final boolean unhookOnClose = false;
+public class wsTracerNew implements XServer.wsOperation {
+    final boolean unhookOnClose = true;
     HashMap<String, Unhook> unhooks = new HashMap<>();
-    wsTracerNew me = this;
+    ws websocket;
+    hook hook;
 
     @Override
-    public NanoWSD.WebSocket handle(NanoHTTPD.IHTTPSession handshake) {
-        return new ws(handshake);
+    public NanoWSD.WebSocket handle(NanoHTTPD.IHTTPSession handshake) { websocket = new ws(handshake);hook = new hook();return websocket; }
+
+    public void handleMessage(String msg){
+        JSONObject req = JSON.parseObject(msg);
+        try {
+            JSONObject call = new JSONObject();
+            String[] methods ={};
+            String[] classes = {};
+            switch ((String) req.get("type")) {
+                case "hook":
+                    methods = ((JSONArray) req.get("methods")).toArray(methods);
+                    for (String mtd:methods) {
+                        Method m = MethodHandler.getMethodbyJavaName(mtd);
+                        if(!unhooks.containsKey(mtd))unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                    }
+                    call.put("type","hook");
+                    call.put("hooks",unhooks.keySet());
+                    break;
+                case "hookClass":
+                    classes = ((JSONArray) req.get("classes")).toArray(methods);
+                    for (String clzname:classes) {
+                        Class clz = Class.forName(clzname,false,XposedEntry.classLoader);
+                        for (Method m:clz.getDeclaredMethods()) {
+                            String mtd = Utils.getJavaName(m);
+                            if(!unhooks.containsKey(mtd))unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                        }
+                    }
+                    call.put("type","hook");
+                    call.put("hooks",unhooks.keySet());
+                    break;
+                case "unhook":
+                    methods = ((JSONArray) req.get("methods")).toArray(methods);
+                    for (String mtd:methods) {
+                        if(unhooks.containsKey(mtd))unhooks.remove(mtd).unhook();
+                    }
+                    call.put("type","unhook");
+                    call.put("hooks",unhooks.keySet());
+                    break;
+                case "classes":
+                    call.put("type","classes");
+                    call.put("classes",DexHelper.getClassesInDex(XposedEntry.classLoader));
+                    break;
+                case "methods":
+                    ArrayList<String> clzArr = new ArrayList<>();
+                    ArrayList<String> methodArr = new ArrayList<>();
+                    ArrayList<String> errArr = new ArrayList<>();
+                    classes = ((JSONArray) req.get("classes")).toArray(classes);
+                    for (String clz:classes) {
+                        try{
+                            for (Method method:Class.forName(clz,false,XposedEntry.classLoader).getDeclaredMethods()) {
+                                methodArr.add(Utils.getJavaName(method));
+                            }
+                            clzArr.add(clz);
+                        }catch (Throwable e){
+                            e.printStackTrace();
+                            errArr.add(clz+" "+e.getLocalizedMessage());
+                        }
+                    }
+                    call.put("type","methods");
+                    call.put("methods",methodArr);
+                    call.put("errors",errArr);
+                    call.put("classes",clzArr);
+                    break;
+            }
+            websocket.trySend(call.toJSONString());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        Log.e("[XServer Debug]", (String)req.get("type"));
+    }
+
+    // 包装一下就好，将显示相关的内容交给前端去处理
+    private class hook extends XC_MethodHook{
+        @Override
+        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            super.beforeHookedMethod(param);
+            JSONObject call = new JSONObject();
+            call.put("type","call");
+            call.put("tid", Process.myTid());
+            call.put("elapsed", Process.getElapsedCpuTime());
+            call.put("method",Utils.getJavaName((Method) param.method));
+            call.put("this", ObjectHandler.briefObject(param.thisObject));
+            JSONArray params = new JSONArray();
+            for (Object arg:param.args) { params.add(ObjectHandler.briefObject(arg)); }
+            call.put("params",params);
+
+            websocket.trySend(call.toJSONString());
+        }
+
+        @Override
+        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            super.afterHookedMethod(param);
+            JSONObject result = new JSONObject();
+            result.put("type","result");
+            result.put("tid", Process.myTid());
+            result.put("elapsed", Process.getElapsedCpuTime());
+            result.put("method",Utils.getJavaName((Method) param.method));
+            result.put("this", ObjectHandler.briefObject(param.thisObject));
+            result.put("result",ObjectHandler.briefObject(param.getResult()));
+
+            websocket.trySend(result.toJSONString());
+        }
     }
 
     private class ws extends NanoWSD.WebSocket {
         public ws(NanoHTTPD.IHTTPSession handshakeRequest) {
             super(handshakeRequest);
         }
-        private void trySend(String payload) {try {send(payload);} catch (IOException e) {e.printStackTrace();}}
+        public void trySend(String payload) {try {send(payload);} catch (IOException e) {e.printStackTrace();}}
         @Override
-        protected void onMessage(NanoWSD.WebSocketFrame message) {
-            //消息处理
-            JSONObject req = JSON.parseObject(message.getTextPayload());
-            switch (req.getString("op")) {
-                case "hook":
-                    Method method = MethodHandler.getMethod(req.getString("class"), req.getString("method"));
-                    if (method != null) {
-                        unhooks.put(method.getDeclaringClass() + "." + method.getName() + Utils.getMethodSignature(method), XposedBridge.hookMethod(method, me));
-                        trySend(method.getName() + "hooked");
-                    }
-                    break;
-                case "unhook":
-                    Unhook unhook = unhooks.remove(req.getString("method"));
-                    if (unhook != null) {
-                        unhook.unhook();
-                        trySend(unhook.toString() + "unhooked");
-                    }
-                    break;
-                case "masshook":
-                    for (String classname : DexHelper.getClassesInDex(XposedEntry.classLoader)) {
-                        if (classname.contains(req.getString("class"))) {
-                            Class clz = ClassHandler.findClassbyName(classname, XposedEntry.classLoader);
-                            if (clz != null) for (Method methodi : clz.getDeclaredMethods()) {
-                                if (methodi.getName().contains(req.getString("method")))
-                                    unhooks.put(methodi.getDeclaringClass() + "." + methodi.getName() + Utils.getMethodSignature(methodi), XposedBridge.hookMethod(methodi, me));
-                            }
-                        }
-                    }
-                    trySend(JSON.toJSONString(unhooks));
-                    break;
-                case "unhookall":
-                    for (String methodname : unhooks.keySet()) {
-                        unhooks.remove(methodname).unhook();
-                    }
-                    trySend("Done.");
-                    break;
-                case "list":
-                    break;
-                case "classes":
-                    trySend(JSON.toJSONString(DexHelper.getClassesInDex(XposedEntry.classLoader)));
-                    break;
-                case "config":
-                    break;
-                default:
-                    trySend(JSON.toJSONString(unhooks));
-            }
-        }
-
+        protected void onMessage(NanoWSD.WebSocketFrame message) { handleMessage(message.getTextPayload()); }
         @Override
         protected void onOpen() {
-            trySend("XServer wsTrace Connected.Welcome.Current Hooked:");
-            trySend(JSON.toJSONString(unhooks));
+            trySend("{\"type\":\"message\",\"message\":\"XServer wsTrace Connected.\"}");
+            // 返回所有类
+            JSONObject classes = new JSONObject();
+            classes.put("type","classes");
+            classes.put("classes",ClassHandler.getAllClasses(XposedEntry.classLoader));
         }
-
         @Override
         protected void onClose(NanoWSD.WebSocketFrame.CloseCode code, String reason, boolean initiatedByRemote) {
             if (unhookOnClose) {
@@ -98,12 +161,9 @@ public class wsTracerNew extends XC_MethodHook implements XServer.wsOperation {
                 }
             }
         }
-
         @Override
         protected void onPong(NanoWSD.WebSocketFrame pong) {}
         @Override
         protected void onException(IOException exception) {}
-
-
     }
 }

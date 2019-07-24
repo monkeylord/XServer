@@ -63,7 +63,13 @@ public class MemoryHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return sb.toString().split("\r\n");
+        String[] mapstrs=sb.toString().split("\r\n");
+        for (int i = 0; i < mapstrs.length; i++) {
+            String[] addrs =mapstrs[i].substring(0,17).split("-");
+            long size = Long.parseLong(addrs[1],16)-Long.parseLong(addrs[0],16);
+            mapstrs[i]=mapstrs[i].replaceFirst(" ",":"+Long.toHexString(size)+" ");
+        }
+        return mapstrs;
     }
 
 }

@@ -12,7 +12,7 @@ public class Tracer implements XServer.Operation {
         try {
             Map<String, Object> map = new HashMap<String, Object>();
             map.put("filter", parms.get("filter"));
-            return XServer.render(map, "pages/tracer.html");
+            return XServer.render(map, "pages/tracer2.html");
         } catch (Exception e) {
             return e.getLocalizedMessage();
         }
