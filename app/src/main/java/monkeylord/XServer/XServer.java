@@ -2,6 +2,7 @@ package monkeylord.XServer;
 
 import android.os.Process;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -22,6 +23,7 @@ import monkeylord.XServer.api.wsTracer;
 import monkeylord.XServer.api.wsTracerNew;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.objectparser.ByteArrayParser;
+import monkeylord.XServer.objectparser.GenericParser;
 import monkeylord.XServer.objectparser.IntParser;
 import monkeylord.XServer.objectparser.StoredObjectParser;
 import monkeylord.XServer.objectparser.StringParser;
@@ -40,7 +42,8 @@ public class XServer extends NanoWSD {
     public XServer(int port, Hashtable<String, Operation> route) {
         super(port);
         //注册对象序列化/反序列化处理器
-        parsers.put("general", new StoredObjectParser());
+        parsers.put("store", new StoredObjectParser());
+        parsers.put("generic", new GenericParser());
         parsers.put("string", new StringParser());
         parsers.put("int", new IntParser());
         parsers.put("Ljava.lang.Integer;", new IntParser());
@@ -92,7 +95,12 @@ public class XServer extends NanoWSD {
         String uri = session.getUri();
         //处理路由
         Operation operation = route.get(uri.toLowerCase());
-        if (operation == null) operation = route.get("/");
+        if (operation == null)try{
+            XposedEntry.res.getAssets().open(uri.substring(1));
+            operation = new assets();
+        }catch (IOException e){
+            operation = route.get("/");
+        }
         return newFixedLengthResponse(operation.handle(uri, session.getParms(), headers, files));
     }
     //供动态注册路由使用
@@ -108,6 +116,15 @@ public class XServer extends NanoWSD {
         Template tmp = new Template(page, new InputStreamReader(XposedEntry.res.getAssets().open(page)), null);
         StringWriter sw = new StringWriter();
         tmp.process(model, sw);
+        return sw.toString();
+    }
+    public static String file(String page) throws IOException, TemplateException {
+        InputStreamReader reader = new InputStreamReader(XposedEntry.res.getAssets().open(page));
+        int ch;
+        StringWriter sw = new StringWriter();
+        while ((ch = reader.read())!=-1){
+            sw.write(ch);
+        }
         return sw.toString();
     }
 
@@ -138,6 +155,18 @@ public class XServer extends NanoWSD {
                 map.put("objs", ObjectHandler.objects);
                 map.put("pid", String.valueOf(Process.myPid()));
                 return render(map, "pages/index.html");
+            } catch (Exception e) {
+                return e.getLocalizedMessage();
+            }
+        }
+    }
+    // 资源文件
+    public class assets implements XServer.Operation {
+        @Override
+        public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
+            try {
+                Map<String, Object> map = new HashMap<String, Object>();
+                return file(url.substring(1));
             } catch (Exception e) {
                 return e.getLocalizedMessage();
             }
