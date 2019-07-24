@@ -9,6 +9,7 @@ import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.ClassHandler;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
+import monkeylord.XServer.utils.Utils;
 
 //查看方法详情页面
 public class MethodView implements XServer.Operation {
@@ -18,6 +19,11 @@ public class MethodView implements XServer.Operation {
             Method method=null;
             if(parms.get("javaname")!=null) {
                 method = MethodHandler.getMethodbyJavaName(parms.get("javaname"));
+                for (int i = 0; i < method.getDeclaringClass().getDeclaredMethods().length; i++) {
+                    if(Utils.getJavaName(method.getDeclaringClass().getDeclaredMethods()[i]).equals(parms.get("javaname"))){
+                        parms.put("method",""+i);
+                    }
+                }
             }
             if(method==null)method=ClassHandler.findClassbyName(parms.get("class"),XposedEntry.classLoader).getDeclaredMethods()[Integer.parseInt(parms.get("method"))];
             HashMap<String, Object> map = MethodHandler.getMethodDetail(method);
