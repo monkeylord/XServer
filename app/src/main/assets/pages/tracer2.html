@@ -25,19 +25,20 @@
     Method Filter(RegEx):<input id="methodFilter" type="text" value=".*"/>
     Thread Filter:<input id="threadFilter" type="text" value="0"/>
     -->
-    <button id="clear" onclick="stop()">Clear Logs</button>
+    <button id="clear" @click="clearLog">Clear Logs</button>
     <button id="loadMethods" onclick="getMths()" :disabled="allClzs.length==0">Load All Methods</button>
     <button id="pause" onclick="pause()" disabled=true>Pause</button>
-    <a id="statistic">Resolved Classes: {{resolvedClzs.length}}/{{allClzs.length}} | Methods Found: {{(Object.keys(allMths).length)}} | Hooked Methods: {{(hookedMths.length==0)? "None/Unknown" : hookedMths.length}}</a>
+    <a id="statistic">WebSocket: {{(websocket)}} | Resolved Classes: {{resolvedClzs.length}}/{{allClzs.length}} | Methods Found: {{(Object.keys(allMths).length)}} | Hooked Methods: {{(hookedMths.length==0)? "None/Unknown" : hookedMths.length}}</a>
     <br/>
     <details open>
-        <summary id="classTree">Method Trace Selector    <button id="redraw" onclick='genTree($("#classes"))' style='display: none;'>Redraw Classes Tree</button></summary>
+        <summary id="classTree">Method Trace Selector</summary>
         Class Filter(RegEx):<input id="classFilter" type="text" v-model="clzFilter"/>
         Method Filter(RegEx):<input id="methodFilter" type="text" v-model="mtdFilter"/>
         <button id="loadMethod" @click="loadMethod">Load Methods for Matched Classes</button>
-        <button id="hook" @click="hookAll">Hook All Known Matched</button>
-        <button id="unhook" @click="unhookAll">Unhook All Known Matched</button>
-        <input type="checkbox" v-model:checked="renderClassTree"><label>Display Class Tree</label>
+        <button id="hookClz" @click="hookClz">Hook Matched Class</button>
+        <button id="hook" @click="hookAll">Hook Matched Methods</button>
+        <button id="unhook" @click="unhookAll">Unhook Matched Methods</button>
+        <input type="checkbox" v-model:checked="renderClassTree"><label>Class Tree</label>
         <p>Matched Classes:{{selectedClzs.length}} | Matched Methods:{{selectedMtds.length}}</p>
         <p v-if="loading!=0">Loading...({{loading}})</p>
         <ul id="classes" style="overflow-y: scroll;overflow-x: hidden;max-height: 600px;">
@@ -53,10 +54,10 @@
 </div>
 
 <template id="classTreeTemplate">
-    <ul>
-        <a>{{scope.split(".").pop()}}</a>
-        <classtree v-for="(clzs,scp) in scopedClasses" :scope="scp" :classes="clzs"></classtree>
-        <p v-for="method in methods()" style="color: green;">
+    <ul style="padding-left: 20px;border-left: 1px outset;">
+        <a @click="fold">[{{(isUnfold)?"-":"+"}}]{{(scope=="")?"Application Package":scope.split(".").pop()}}</a>
+        <classtree v-if="isUnfold" v-for="(clzs,scp) in scopedClasses" :scope="scp" :classes="clzs"></classtree>
+        <p v-if="isUnfold" v-for="method in methods()" style="color: green;">
             <input type="checkbox" class="checkbox" :checked="methodHooked(method)" :id="method" @click="doHook"/>
             {{method}}
         </p>
@@ -101,7 +102,8 @@ var controlData = {
     clzMths: {},
     hookedMths: [],
     loading: 0,
-    renderClassTree: true
+    renderClassTree: true,
+    websocket: "Not Connected"
 }
 
 var hookMessage = {
@@ -130,6 +132,7 @@ var hookmsgCmp = Vue.component('hookmsg', {
 var classtreeCmp = Vue.component('classtree', {
   // 声明 props
   props: ['scope','classes'],
+  data:()=>{return {isUnfold:true}},
   // 同样也可以在 vm 实例中像 "this.message" 这样使用
   template: document.getElementById("classTreeTemplate"),
   computed:{
@@ -171,6 +174,9 @@ var classtreeCmp = Vue.component('classtree', {
             // hook
             doHookMethods([method])
         }
+    },fold: function(){
+        this.isUnfold  = !this.isUnfold
+        console.log(this.scope)
     }
   }
 })
@@ -184,7 +190,14 @@ var nav = new Vue({
   data: controlData,
   computed: {
       selectedClzs: function(){
-          return this.allClzs.filter(clz=>clz.class.match(this.clzFilter))
+          var filteredClzs = this.allClzs.filter(clz=>clz.class.match(this.clzFilter))
+          if(this.mtdFilter!="" && this.mtdFilter != ".*"){
+                var nonEmptyClzs = this.selectedMtds.map(method=>{
+                    return method.split(";->")[0].slice(1)
+                })
+              filteredClzs = filteredClzs.filter(clz=>nonEmptyClzs.indexOf(clz.class)!=-1)
+          }
+          return filteredClzs
       },
       selectedMtds:function(){
           return this.allMths.filter(method=>{
@@ -222,6 +235,12 @@ var nav = new Vue({
               return clz.match(this.clzFilter) && mname.match(this.mtdFilter) && this.hookedMths.indexOf(method)!=-1
           })
         doUnhookMethods(hooked)
+      },
+      hookClz: function(){
+          doHookClasses(this.selectedClzs.map(clz=>clz.class))
+      },
+      clearLog: function(){
+        hookMessage.children = []
       }
   }
 })
@@ -249,11 +268,14 @@ var msg = new Vue({
     }
 
     //连接发生错误的回调方法
-    websocket.onerror = (event)=>{alert("Connection Error!");console.log(event)}
+    websocket.onerror = (event)=>{
+        controlData.websocket = "Error"
+        alert("Connection Error!");console.log(event)
+    }
 
     //连接成功建立的回调方法
     websocket.onopen = ()=>{
-        divMsg.innerHTML = "WebSocket Connected!"
+        controlData.websocket = "Connected"
         // 立刻请求类清单
         getAllClzs()
         doHookMethods([])
@@ -267,7 +289,7 @@ var msg = new Vue({
 
     //连接关闭的回调方法
     websocket.onclose = function () {
-        setMessageInnerHTML("WebSocket Closed");
+        controlData.websocket = "Closed"
         document.getElementById('loadMethods').disabled=true;
         document.getElementById('clear').disabled=true;
     }

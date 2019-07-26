@@ -42,26 +42,43 @@ public class wsTracerNew implements XServer.wsOperation {
             JSONObject call = new JSONObject();
             String[] methods ={};
             String[] classes = {};
+            ArrayList<String> clzArr = new ArrayList<>();
+            ArrayList<String> methodArr = new ArrayList<>();
+            ArrayList<String> errArr = new ArrayList<>();
             switch ((String) req.get("type")) {
                 case "hook":
                     methods = ((JSONArray) req.get("methods")).toArray(methods);
                     for (String mtd:methods) {
-                        Method m = MethodHandler.getMethodbyJavaName(mtd);
-                        if(!unhooks.containsKey(mtd))unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                        try {
+                            Method m = MethodHandler.getMethodbyJavaName(mtd);
+                            if (!unhooks.containsKey(mtd))
+                                unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                        }catch (Throwable e){
+                            e.printStackTrace();
+                            errArr.add(mtd+":"+e.getMessage());
+                        }
                     }
                     call.put("type","hook");
+                    call.put("errors",errArr);
                     call.put("hooks",unhooks.keySet());
                     break;
                 case "hookClass":
                     classes = ((JSONArray) req.get("classes")).toArray(methods);
                     for (String clzname:classes) {
-                        Class clz = Class.forName(clzname,false,XposedEntry.classLoader);
-                        for (Method m:clz.getDeclaredMethods()) {
-                            String mtd = Utils.getJavaName(m);
-                            if(!unhooks.containsKey(mtd))unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                        try {
+                            Class clz = Class.forName(clzname, false, XposedEntry.classLoader);
+                            for (Method m : clz.getDeclaredMethods()) {
+                                String mtd = Utils.getJavaName(m);
+                                if (!unhooks.containsKey(mtd))
+                                    unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                            }
+                        }catch (Throwable e){
+                            e.printStackTrace();
+                            errArr.add(clzname+":"+e.getMessage());
                         }
                     }
                     call.put("type","hook");
+                    call.put("errors",errArr);
                     call.put("hooks",unhooks.keySet());
                     break;
                 case "unhook":
@@ -77,9 +94,6 @@ public class wsTracerNew implements XServer.wsOperation {
                     call.put("classes",DexHelper.getClassesInDex(XposedEntry.classLoader));
                     break;
                 case "methods":
-                    ArrayList<String> clzArr = new ArrayList<>();
-                    ArrayList<String> methodArr = new ArrayList<>();
-                    ArrayList<String> errArr = new ArrayList<>();
                     classes = ((JSONArray) req.get("classes")).toArray(classes);
                     for (String clz:classes) {
                         try{
@@ -133,6 +147,7 @@ public class wsTracerNew implements XServer.wsOperation {
             result.put("method",Utils.getJavaName((Method) param.method));
             result.put("this", ObjectHandler.briefObject(param.thisObject));
             result.put("result",ObjectHandler.briefObject(param.getResult()));
+            if(param.hasThrowable())result.put("throw",ObjectHandler.briefObject(param.getThrowable()));
 
             websocket.trySend(result.toJSONString());
         }
