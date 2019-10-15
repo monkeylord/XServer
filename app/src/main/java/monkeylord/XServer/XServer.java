@@ -22,6 +22,7 @@ import monkeylord.XServer.api.wsMethodView;
 import monkeylord.XServer.api.wsTracer;
 import monkeylord.XServer.api.wsTracerNew;
 import monkeylord.XServer.handler.ObjectHandler;
+import monkeylord.XServer.objectparser.BooleanParser;
 import monkeylord.XServer.objectparser.ByteArrayParser;
 import monkeylord.XServer.objectparser.GenericParser;
 import monkeylord.XServer.objectparser.IntParser;
@@ -47,9 +48,11 @@ public class XServer extends NanoWSD {
         parsers.put("string", new StringParser());
         parsers.put("int", new IntParser());
         parsers.put("Ljava.lang.Integer;", new IntParser());
-        parsers.put("byte", new ByteArrayParser());
+        parsers.put("Ljava.lang.Boolean;", new BooleanParser());
         parsers.put("Ljava.lang.String;", new StringParser());
         parsers.put("I", new IntParser());
+        parsers.put("Z", new BooleanParser());
+        parsers.put("byte", new ByteArrayParser());
         parsers.put("[B", new ByteArrayParser());
 
         //注册WebSocket路由
