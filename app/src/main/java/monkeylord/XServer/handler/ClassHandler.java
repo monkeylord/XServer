@@ -45,7 +45,7 @@ public class ClassHandler {
         }
     }
 
-    public static Class findClassbyJavaName(String javaName, ClassLoader classLoader) {
+    public static Class findClassbyJavaNameEx(String javaName, ClassLoader classLoader) {
         try {
             String clzName = javaName.replace('/', '.').replace(";", "");
             clzName = (clzName.charAt(0) == 'L') ? clzName.substring(1) : clzName;
@@ -54,4 +54,49 @@ public class ClassHandler {
             return null;
         }
     }
+
+    /*
+    * copied from libcore.reflect.InternalNames
+    * */
+    public static java.lang.Class<?> findClassbyJavaName(java.lang.String internalName,java.lang.ClassLoader classLoader) {
+        if (internalName.startsWith("[")) {
+            return java.lang.reflect.Array.newInstance(findClassbyJavaName(internalName.substring(1), classLoader), 0).getClass();
+        }
+        if (internalName.equals("Z")) {
+            return java.lang.Boolean.TYPE;
+        }
+        if (internalName.equals("B")) {
+            return java.lang.Byte.TYPE;
+        }
+        if (internalName.equals("S")) {
+            return java.lang.Short.TYPE;
+        }
+        if (internalName.equals("I")) {
+            return java.lang.Integer.TYPE;
+        }
+        if (internalName.equals("J")) {
+            return java.lang.Long.TYPE;
+        }
+        if (internalName.equals("F")) {
+            return java.lang.Float.TYPE;
+        }
+        if (internalName.equals("D")) {
+            return java.lang.Double.TYPE;
+        }
+        if (internalName.equals("C")) {
+            return java.lang.Character.TYPE;
+        }
+        if (internalName.equals("V")) {
+            return java.lang.Void.TYPE;
+        }
+        java.lang.String name = internalName.substring(1, internalName.length() - 1).replace('/', '.');
+        try {
+            return classLoader.loadClass(name);
+        } catch (java.lang.ClassNotFoundException e) {
+            java.lang.NoClassDefFoundError error = new java.lang.NoClassDefFoundError(name);
+            error.initCause(e);
+            throw error;
+        }
+    }
+
 }
