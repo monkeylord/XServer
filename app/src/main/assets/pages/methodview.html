@@ -20,6 +20,8 @@
 <p>Return:${returnType.name}</p>
 
 <h1>Invoke</h1>
+<p>PS: This is for test and is depreciated, You should use MitM tool to intercept/replay invoke.</p>
+<p>Each invoke on this method will be rerouted to http://127.0.0.1:8000/invoke2, so MitM tool like burp can intercept that once there's a proxy set.</p>
 <form action=/invoke method="post" target="_blank">
     <input type=hidden name=class value=${class}>
     <input type=hidden name=method value=${method}>
@@ -48,11 +50,10 @@
 </body>
 <script type="text/javascript">
     var websocket = null;
-    var Datum={};
-    var messages="";
+    var thisObjs = {}
     //判断当前浏览器是否支持WebSocket
     if ('WebSocket' in window) {
-        websocket = new WebSocket(document.location.origin.replace("http","ws")+"/methodview?class=${class}&method=${method}&javaname=${javaName}");
+        websocket = new WebSocket(document.location.origin.replace("http","ws")+"/methodview2?javaname=${javaName}");
     }
     else {
         alert('当前浏览器 Not support websocket')
@@ -70,13 +71,15 @@
 
     //接收到消息的回调方法
     websocket.onmessage = function (event) {
-        data=JSON.parse(event.data);
-        if(data.op=="msg")setMessageInnerHTML(data.msg);
-        else if(data.op="updatethis")updatethis(data.data);
-        else if(data.op=="data"){
-            Datum[data.dataname]=data.data;
-            console.log(Datum[data.dataname]);
-            }
+        var evt=JSON.parse(event.data);
+        switch(evt.type){
+            case "before":
+                beforeHookedMethod(evt)
+                break;
+            case "after":
+                afterHookedMethod(evt)
+                break;
+        }
     }
 
     //连接关闭的回调方法
@@ -89,6 +92,47 @@
         closeWebSocket();
     }
 
+    function beforeHookedMethod(evt){
+        console.log(evt)
+        if(evt.this && evt.this!="Null"){
+            thisObjs[evt.this]=evt.this
+            updatethis(thisObjs)
+        }
+        var detail = "<details open><summary>[" + evt.threadid + "]" + evt.method + "  Called</summary>"
+        var stackDetails = "<details><summary>Stack Trace</summary>"
+        evt.stack.forEach((strace)=>stackDetails += "<p> " + strace.className + "." + strace.methodName + " at " + strace.fileName + ":" + strace.lineNumber + "</p>")
+        stackDetails += "</details>"
+
+        var args = "<dl>"
+        evt.params.forEach((param, index)=>args+="<dt>Args "+index+"</dt><dd>"+param+"</dd>")
+        args+="</dl>"
+
+        detail += stackDetails
+        detail += args
+        detail += "</details>"
+        setMessageInnerHTML(detail)
+        return detail
+    }
+    function afterHookedMethod(evt){
+        console.log(evt)
+        var detail = "<details open><summary>["+evt.threadid+"]"+evt.method+"  Returned</summary>"
+        var result = ""
+        if(evt.result){
+            result = "<dl>"
+            result+= "<dt>Return</dt><dd>"+evt.result+"</dd>"
+            result+= "</dl>"
+        }
+        if(evt.throws){
+            result = "<dl>"
+            result+="<dt>Throw</dt><dd>"+evt.throws+"</dd>"
+            result+="</dl>"
+        }
+
+        detail += result
+        detail += "</details>"
+        setMessageInnerHTML(detail)
+        return detail
+    }
     //将消息显示在网页上
     function setMessageInnerHTML(innerHTML) {
         document.getElementById('message').innerHTML = document.getElementById('message').innerHTML + innerHTML;
@@ -113,7 +157,5 @@
         var message = document.getElementById('text').value;
         websocket.send(message);
     }
-
-
 </script>
 </html>
