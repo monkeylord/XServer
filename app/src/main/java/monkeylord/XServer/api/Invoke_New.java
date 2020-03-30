@@ -16,7 +16,7 @@ import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 
 //处理反射调用的另一个接口
-public class Invoke_New implements XServer.Operation {
+public class Invoke_New extends BaseOperation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         StringBuilder sb = new StringBuilder();

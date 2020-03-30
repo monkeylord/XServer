@@ -239,7 +239,8 @@ public class wsMethodView implements XServer.wsOperation {
             if (obj == null) return "null";
             if (obj.getClass().getName().equals("java.lang.String")) return obj.toString();
             else if(Utils.getTypeSignature(obj.getClass()).equals("[B"))return parsers.get("[B").generate(obj);
-            else return JSON.toJSONString(obj);
+            //else return JSON.toJSONString(obj);
+            else return parsers.get("store").generate(obj);
         }
 
         private String MethodDescription(MethodHookParam param) {

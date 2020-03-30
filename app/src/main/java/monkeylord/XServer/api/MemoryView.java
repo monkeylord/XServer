@@ -12,7 +12,7 @@ import monkeylord.XServer.XServer;
 import monkeylord.XServer.handler.MemoryHandler;
 import monkeylord.XServer.handler.MethodHandler;
 
-public class MemoryView implements XServer.Operation {
+public class MemoryView extends BaseOperation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         try {

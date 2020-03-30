@@ -6,7 +6,7 @@ import java.util.Map;
 import monkeylord.XServer.XServer;
 
 //MassTracer页面
-public class Tracer implements XServer.Operation {
+public class Tracer extends BaseOperation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         try {

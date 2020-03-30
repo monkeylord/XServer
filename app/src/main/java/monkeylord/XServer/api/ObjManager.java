@@ -7,7 +7,7 @@ import monkeylord.XServer.XServer;
 
 //对象管理器页面
 //TODO 增删改查编辑暂存的对象
-public class ObjManager implements XServer.Operation {
+public class ObjManager extends BaseOperation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         try {

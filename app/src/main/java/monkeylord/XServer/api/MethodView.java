@@ -12,7 +12,7 @@ import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.utils.Utils;
 
 //查看方法详情页面
-public class MethodView implements XServer.Operation {
+public class MethodView extends BaseOperation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         try {
