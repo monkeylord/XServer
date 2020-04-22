@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Manager</title>
+</head>
+<body>
+<input id="path" value="${dir}"><button onclick=cd()>Change Directory</button>
+<div id="filelist"></div>
+<script>
+    async function cd(directory){
+        var fileList = document.getElementById("filelist")
+        filelist.innerHTML = ""
+
+        directory = directory || document.getElementById("path").value
+        document.getElementById("path").value = directory
+
+        var el = document.createElement("li")
+        var download = document.createElement("a")
+        download.text = ".."
+        download.href = "javascript:"+"cd('" + directory.concat("/").replace("//","/").split("/").reverse().splice(2).reverse().join("/").concat("/") + "');"
+        el.appendChild(download)
+        fileList.appendChild(el)
+
+        var list = await fetch("file?op=readdir&path=" + directory)
+            .then(r=>{
+                if(r.status==200)return r.json()
+                else throw(r.text())
+            })
+
+
+
+        Object.keys(list).forEach(file=>{
+            var el = document.createElement("li")
+            var download = document.createElement("a")
+            download.style = "white-space: pre;"
+            var permission = (list[file].canRead?"r":"-") + (list[file].canWrite?"w":"-") + (list[file].canExcute?"x":"-")
+            var lastModified = new Date(list[file].lastModified).toGMTString()
+            var size = list[file].isDirectory ? "" : list[file].length + ""
+            size = size + "\t\t".slice(size.length/4)
+            download.text = permission + "\t" + size + "\t" + lastModified + "\t\t" + file
+            if(!list[file].isDirectory)download.href = "file?op=read&path=" + (document.getElementById("path").value + "/" + file).replace("//","/")
+            else download.href = "javascript:"+"cd('" + (directory + "/" + file).replace("//","/") + "');"
+            el.appendChild(download)
+            fileList.appendChild(el)
+        })
+    }
+    (function(){cd()})()
+</script>
+</body>
+</html>

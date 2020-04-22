@@ -13,6 +13,7 @@ import java.util.Map;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import monkeylord.XServer.api.ClassView;
+import monkeylord.XServer.api.FileAccess;
 import monkeylord.XServer.api.Invoke;
 import monkeylord.XServer.api.Invoke_New;
 import monkeylord.XServer.api.MemoryView;
@@ -71,6 +72,7 @@ public class XServer extends NanoWSD {
         XServer.route.put("/invoke", new Invoke());
         XServer.route.put("/invoke2", new Invoke_New());
         XServer.route.put("/memory", new MemoryView());
+        XServer.route.put("/file", new FileAccess());
         try {
             //启动监听
             start(0, false);
