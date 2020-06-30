@@ -36,6 +36,7 @@ public class Invoke_New extends BaseOperation {
             sb.append(ObjectHandler.saveObject(method.invoke(thisobj, params)));
         } catch (Exception e) {
             sb.append(e.getLocalizedMessage());
+            sb.append("\r\n");
             for (StackTraceElement st:e.getStackTrace()) {
                 sb.append(st.toString());
                 sb.append('\n');

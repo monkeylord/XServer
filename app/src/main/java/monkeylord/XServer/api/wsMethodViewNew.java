@@ -12,9 +12,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
 import monkeylord.XServer.XServer;
+import monkeylord.XServer.handler.Hook.Unhook;
+import monkeylord.XServer.handler.Hook.XServer_MethodHook;
+import monkeylord.XServer.handler.Hook.XServer_Param;
+import monkeylord.XServer.handler.HookHandler;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.utils.NanoHTTPD;
@@ -26,37 +28,42 @@ import monkeylord.XServer.utils.netUtil;
 public class wsMethodViewNew implements XServer.wsOperation {
 
     final boolean unhookOnClose = true;
-    HashMap<String, XC_MethodHook.Unhook> unhooks = new HashMap<>();
-    ws websocket;
-    MethodHook hook;
-    public Method m = null;
+    //HashMap<String, XC_MethodHook.Unhook> unhooks = new HashMap<>();
+    HashMap<MethodHook, ws> wss = new HashMap<>();
+    HashMap<ws, Method> methods = new HashMap<>();
+    //ws websocket;
+    //MethodHook hook;
+    //public Method m = null;
     public String server="http://127.0.0.1:8000";//TODO +Process.myPid();
 
     @Override
     public NanoWSD.WebSocket handle(NanoHTTPD.IHTTPSession handshake) {
-        websocket = new ws(handshake);return websocket;
+        return new ws(handshake);
     }
 
     public Object wsInvoke(Object[] params) throws InvocationTargetException, IllegalAccessException {
-        return m.invoke(params);
+        return methods.get(this).invoke(params);
     }
 
     public class ws extends NanoWSD.WebSocket {
 
-        XC_MethodHook.Unhook unhook = null;
+        Unhook unhook = null;
         boolean modify = true;
         HashMap<String, Object> objs = new HashMap<>();
 
         public ws(NanoHTTPD.IHTTPSession handshakeRequest) {
             super(handshakeRequest);
-            m = MethodHandler.getMethodbyJavaName((handshakeRequest.getParms().get("javaname")));
+            Method m = MethodHandler.getMethodbyJavaName((handshakeRequest.getParms().get("javaname")));
+            methods.put(this,m);
         }
 
         public void trySend(String payload) {try {send(payload);} catch (IOException e) {e.printStackTrace();}}
 
         @Override
         protected void onOpen() {
-            hook = new MethodHook(m);
+            Method m = methods.get(this);
+            MethodHook hook = new MethodHook(m);
+            wss.put(hook,this);
             JSONObject res = new JSONObject();
             res.put("type","hook");
             res.put("method", Utils.getJavaName(m));
@@ -77,26 +84,26 @@ public class wsMethodViewNew implements XServer.wsOperation {
         protected void onException(IOException exception) {}
     }
 
-    public class MethodHook extends XC_MethodHook {
+    public class MethodHook extends XServer_MethodHook {
         public Member method;            //被Hook的方法
         public Object thisObject;        //方法被调用时的this对象
         public Object[] args;            //方法被调用时的参数
         private Object result = null;    //方法被调用后的返回结果
         private int tid = 0;
 
-        MethodHook(Method method) { XposedBridge.hookMethod(method, this); }
+        MethodHook(Method method) { HookHandler.getProvider().hookMethod(method, this); }
 
         public void setTid(int tid) {
             this.tid = tid;
         }
 
-        private void gatherInfo(MethodHookParam param) {
+        private void gatherInfo(XServer_Param param) {
             method = param.method;
             thisObject = param.thisObject;
             args = param.args;
         }
 
-        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+        public void beforeHookedMethod(XServer_Param param) throws Throwable {
             super.beforeHookedMethod(param);
             if (tid > 0 && tid != Process.myPid()) return;
             gatherInfo(param);
@@ -106,6 +113,7 @@ public class wsMethodViewNew implements XServer.wsOperation {
 
             // 先把信息通过WebSocket发送出去
             // 详细信息去ObjectManager查
+            Method m = methods.get(wss.get(this));
             JSONObject res = new JSONObject();
             JSONArray params = new JSONArray();
             for (Object arg:param.args) { params.add(ObjectHandler.saveObject(arg)); }
@@ -116,9 +124,9 @@ public class wsMethodViewNew implements XServer.wsOperation {
             res.put("stack", Thread.currentThread().getStackTrace());
             res.put("isproxy",Invoke_New.isMe());
             res.put("threadid", Process.myTid());
-            websocket.trySend(res.toJSONString());
+            wss.get(this).trySend(res.toJSONString());
             
-            if (websocket.modify) {
+            if (wss.get(this).modify) {
                 JSONObject call = new JSONObject();
 
                 call.put("method", Utils.getJavaName(m));
@@ -133,19 +141,19 @@ public class wsMethodViewNew implements XServer.wsOperation {
                         ObjectHandler.parseObject(
                                 // 格式化一下更可读
                                 // TODO: 使用fastjson的格式化
-                                new netUtil(server + "/invoke2", new org.json.JSONObject(call.toJSONString()).toString()).getRet()
+                                new netUtil(server + "/invoke2", new org.json.JSONObject(call.toJSONString()).toString(2)).getRet()
                         )
                 );
             }
         }
 
-        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        public void afterHookedMethod(XServer_Param param) throws Throwable {
             super.beforeHookedMethod(param);
             if (tid > 0 && tid != Process.myPid()) return;
             gatherInfo(param);
             // 如果是自己调用的路过的信息，就忽略
             if(Invoke_New.isMe())return;
-
+            Method m = methods.get(wss.get(this));
             result = param.getResult();
             JSONObject res = new JSONObject();
             res.put("type","after");
@@ -159,7 +167,7 @@ public class wsMethodViewNew implements XServer.wsOperation {
                 res.put("throws",ObjectHandler.briefObject(param.getThrowable()));
             }
 
-            websocket.trySend(res.toJSONString());
+            wss.get(this).trySend(res.toJSONString());
         }
     }
 }

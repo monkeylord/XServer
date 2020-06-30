@@ -23,11 +23,11 @@ public class ClassView extends BaseOperation {
                 switch (parms.get("op")){
                     case "getclass":
                         res.put("class",
-                                ClassHandler.getClassDetail(ClassHandler.findClassbyName(parms.get("class"), XposedEntry.classLoader)));
+                                ClassHandler.getClassDetail(ClassHandler.findClassbyName(parms.get("class"), XServer.classLoader)));
                         return res.toJSONString();
                     case "getclasses":
                         res.put("classes",
-                                DexHelper.getClassesInDex(XposedEntry.classLoader));
+                                DexHelper.getClassesInDex(XServer.classLoader));
                         return res.toJSONString();
                     default:
                         return "";
@@ -35,7 +35,7 @@ public class ClassView extends BaseOperation {
             }else{
                 return XServer.render(
                         ClassHandler.getClassDetail(
-                                ClassHandler.findClassbyName(parms.get("class"), XposedEntry.classLoader)),
+                                ClassHandler.findClassbyName(parms.get("class"), XServer.classLoader)),
                         "pages/classview.html");
             }
         } catch (Exception e) {

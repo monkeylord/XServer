@@ -1,11 +1,13 @@
 package monkeylord.XServer;
 
+import android.app.Application;
 import android.os.Process;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -38,6 +40,8 @@ public class XServer extends NanoWSD {
     public static HashMap<String, ObjectParser> parsers = new HashMap<String, ObjectParser>();
     static Hashtable<String, Operation> route = new Hashtable<String, Operation>();
     static Hashtable<String, wsOperation> wsroute = new Hashtable<String, wsOperation>();
+    public static ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+    public static String currentApp = "";
 
     public XServer(int port) {
         this(port, null);
@@ -45,6 +49,14 @@ public class XServer extends NanoWSD {
 
     public XServer(int port, Hashtable<String, Operation> route) {
         super(port);
+        //确定应用名称
+        if(currentApp=="") {
+            try {
+                currentApp = (String) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentPackageName").invoke(null);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         //注册对象序列化/反序列化处理器
         parsers.put("store", new StoredObjectParser());
         parsers.put("generic", new GenericParser());
@@ -163,7 +175,7 @@ public class XServer extends NanoWSD {
                 map.put("opList", route.keySet());
                 map.put("params", session.getParms());
                 map.put("headers", session.getHeaders());
-                map.put("clzs", DexHelper.getClassesInDex(XposedEntry.classLoader));
+                map.put("clzs", DexHelper.getClassesInDex(XServer.classLoader));
                 map.put("parsers", parsers);
                 map.put("objs", ObjectHandler.objects);
                 map.put("pid", String.valueOf(Process.myPid()));

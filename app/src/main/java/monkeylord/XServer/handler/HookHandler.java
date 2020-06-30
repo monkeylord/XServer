@@ -1,30 +1,25 @@
 package monkeylord.XServer.handler;
 
-import de.robv.android.xposed.XC_MethodHook;
+import monkeylord.XServer.handler.Hook.Unhook;
+import monkeylord.XServer.handler.Hook.XServer_MethodHook;
 
 //处理hook相关内容
 public class HookHandler {
-    static boolean AddHook() {
-        return false;
+    static HookProvider provider = null;
+
+    public static HookProvider getProvider() throws NullPointerException{
+        if(provider==null)throw new NullPointerException("No provider available");
+        return provider;
     }
 
-    static boolean removeHook() {
-        return false;
+    public static boolean setProvider(HookProvider newProvider){
+        if(provider!=null || newProvider==null)return false;
+        provider=newProvider;
+        return true;
     }
 
-    static XC_MethodHook[] listHooks() {
-        return null;
-    }
-
-    static XC_MethodHook loadHook() {
-        return null;
-    }
-
-    static XC_MethodHook wsHook() {
-        return null;
-    }
-
-    static XC_MethodHook premadeHook() {
-        return null;
+    public interface HookProvider{
+        Unhook hookMethod(java.lang.reflect.Member hookMethod, XServer_MethodHook callback);
+        void unhookMethod(java.lang.reflect.Member hookMethod, Object additionalObj);
     }
 }

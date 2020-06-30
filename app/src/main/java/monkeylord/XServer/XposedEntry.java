@@ -1,19 +1,24 @@
 package monkeylord.XServer;
 
-import android.app.AndroidAppHelper;
 import android.content.pm.ApplicationInfo;
 import android.content.res.XModuleResources;
 import android.os.Build;
 import android.os.Process;
-import android.util.Log;
+
+import java.lang.reflect.Member;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
+import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import monkeylord.XServer.handler.Hook.Unhook;
+import monkeylord.XServer.handler.Hook.XServer_MethodHook;
+import monkeylord.XServer.handler.Hook.XServer_Param;
+import monkeylord.XServer.handler.HookHandler;
 
 /*
     某些Android 4版本，需要修改依赖库的配置才能兼容，否则会报pre-verifed错误。
@@ -58,7 +63,58 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         //启动XServer
         if(!targetApp.equals("MadMode"))new XServer(8000);
         new XServer(Process.myPid());
-        XposedBridge.log("XServer Listening... @"+loadPackageParam.packageName);
+        XposedBridge.log("XServer Listening... on"+loadPackageParam.packageName + "@" + Process.myPid());
+        setXposedHookProvider();
+        XposedBridge.log("Using XposedHook...@" + Process.myPid());
+    }
+
+    void setXposedHookProvider(){
+        XServer.classLoader = classLoader;
+        HookHandler.setProvider(new HookHandler.HookProvider() {
+            XC_MethodHook myCallback = null;
+            @Override
+            public Unhook hookMethod(Member hookMethod, final XServer_MethodHook mycallback) {
+                XC_MethodHook myCallback = new XC_MethodHook() {
+                    XServer_MethodHook callback = mycallback;
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        super.beforeHookedMethod(param);
+                        XServer_Param xsParam = new XServer_Param();
+                        xsParam.args = param.args;
+                        xsParam.method = param.method;
+                        xsParam.thisObject = param.thisObject;
+                        xsParam.throwable = param.getThrowable();
+                        xsParam.result = param.getResult();
+                        callback.beforeHookedMethod(xsParam);
+                        if (xsParam.returnEarly) {
+                            if (xsParam.hasThrowable()) param.setThrowable(xsParam.getThrowable());
+                            else param.setResult(xsParam.result);
+                        }
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        super.afterHookedMethod(param);
+                        XServer_Param xsParam = new XServer_Param();
+                        xsParam.args = param.args;
+                        xsParam.method = param.method;
+                        xsParam.thisObject = param.thisObject;
+                        xsParam.throwable = param.getThrowable();
+                        xsParam.result = param.getResult();
+                        callback.afterHookedMethod(xsParam);
+                        if (xsParam.hasThrowable()) param.setThrowable(xsParam.getThrowable());
+                        else param.setResult(xsParam.result);
+                    }
+                };
+                Object unhook = XposedBridge.hookMethod(hookMethod, myCallback);
+                return new Unhook(hookMethod, unhook);
+            }
+
+            @Override
+            public void unhookMethod(Member hookMethod, Object additionalObj) {
+                if(additionalObj!=null)((XC_MethodHook.Unhook)additionalObj).unhook();
+            }
+        });
     }
 
     private void gatherInfo(XC_LoadPackage.LoadPackageParam loadPackageParam) {

@@ -25,7 +25,7 @@ public class MethodView extends BaseOperation {
                     }
                 }
             }
-            if(method==null)method=ClassHandler.findClassbyName(parms.get("class"),XposedEntry.classLoader).getDeclaredMethods()[Integer.parseInt(parms.get("method"))];
+            if(method==null)method=ClassHandler.findClassbyName(parms.get("class"),XServer.classLoader).getDeclaredMethods()[Integer.parseInt(parms.get("method"))];
             HashMap<String, Object> map = MethodHandler.getMethodDetail(method);
             map.put("method",parms.get("method"));
             map.put("objList", ObjectHandler.objects.keySet());

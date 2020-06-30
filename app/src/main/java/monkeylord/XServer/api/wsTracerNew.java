@@ -12,12 +12,12 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XC_MethodHook.Unhook;
-import de.robv.android.xposed.XposedBridge;
 import monkeylord.XServer.XServer;
-import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.ClassHandler;
+import monkeylord.XServer.handler.Hook.Unhook;
+import monkeylord.XServer.handler.Hook.XServer_MethodHook;
+import monkeylord.XServer.handler.Hook.XServer_Param;
+import monkeylord.XServer.handler.HookHandler;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.utils.DexHelper;
@@ -52,7 +52,7 @@ public class wsTracerNew implements XServer.wsOperation {
                         try {
                             Method m = MethodHandler.getMethodbyJavaName(mtd);
                             if (!unhooks.containsKey(mtd))
-                                unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                                unhooks.put(mtd, HookHandler.getProvider().hookMethod(m, hook));
                         }catch (Throwable e){
                             e.printStackTrace();
                             errArr.add(mtd+":"+e.getMessage());
@@ -66,11 +66,11 @@ public class wsTracerNew implements XServer.wsOperation {
                     classes = ((JSONArray) req.get("classes")).toArray(methods);
                     for (String clzname:classes) {
                         try {
-                            Class clz = Class.forName(clzname, false, XposedEntry.classLoader);
+                            Class clz = Class.forName(clzname, false, XServer.classLoader);
                             for (Method m : clz.getDeclaredMethods()) {
                                 String mtd = Utils.getJavaName(m);
                                 if (!unhooks.containsKey(mtd))
-                                    unhooks.put(mtd, XposedBridge.hookMethod(m, hook));
+                                    unhooks.put(mtd, HookHandler.getProvider().hookMethod(m, hook));
                             }
                         }catch (Throwable e){
                             e.printStackTrace();
@@ -91,13 +91,13 @@ public class wsTracerNew implements XServer.wsOperation {
                     break;
                 case "classes":
                     call.put("type","classes");
-                    call.put("classes",DexHelper.getClassesInDex(XposedEntry.classLoader));
+                    call.put("classes",DexHelper.getClassesInDex(XServer.classLoader));
                     break;
                 case "methods":
                     classes = ((JSONArray) req.get("classes")).toArray(classes);
                     for (String clz:classes) {
                         try{
-                            for (Method method:Class.forName(clz,false,XposedEntry.classLoader).getDeclaredMethods()) {
+                            for (Method method:Class.forName(clz,false,XServer.classLoader).getDeclaredMethods()) {
                                 methodArr.add(Utils.getJavaName(method));
                             }
                             clzArr.add(clz);
@@ -120,9 +120,9 @@ public class wsTracerNew implements XServer.wsOperation {
     }
 
     // 包装一下就好，将显示相关的内容交给前端去处理
-    private class hook extends XC_MethodHook{
+    private class hook extends XServer_MethodHook {
         @Override
-        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+        public void beforeHookedMethod(XServer_Param param) throws Throwable {
             super.beforeHookedMethod(param);
             JSONObject call = new JSONObject();
             call.put("type","call");
@@ -138,7 +138,7 @@ public class wsTracerNew implements XServer.wsOperation {
         }
 
         @Override
-        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        public void afterHookedMethod(XServer_Param param) throws Throwable {
             super.afterHookedMethod(param);
             JSONObject result = new JSONObject();
             result.put("type","result");
@@ -166,7 +166,7 @@ public class wsTracerNew implements XServer.wsOperation {
             // 返回所有类
             JSONObject classes = new JSONObject();
             classes.put("type","classes");
-            classes.put("classes",ClassHandler.getAllClasses(XposedEntry.classLoader));
+            classes.put("classes",ClassHandler.getAllClasses(XServer.classLoader));
         }
         @Override
         protected void onClose(NanoWSD.WebSocketFrame.CloseCode code, String reason, boolean initiatedByRemote) {

@@ -17,7 +17,7 @@ public class Invoke extends BaseOperation {
         thisobj = parms.get("thisobj").equals("null") ? null : ObjectHandler.objects.get(parms.get("thisobj"));
 
         try {
-            Method[] methods = Class.forName(parms.get("class"), false, XposedEntry.classLoader).getDeclaredMethods();
+            Method[] methods = Class.forName(parms.get("class"), false, XServer.classLoader).getDeclaredMethods();
             Method m = methods[Integer.parseInt(parms.get("method"))];
             params = new Object[m.getParameterTypes().length];
             for (int i = 0; i < m.getParameterTypes().length; i++) {

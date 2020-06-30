@@ -7,7 +7,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import monkeylord.XServer.XposedEntry;
+import monkeylord.XServer.XServer;
 import monkeylord.XServer.utils.Utils;
 
 //处理方法相关内容
@@ -27,7 +27,7 @@ public class MethodHandler {
 
     public static Method getMethod(String className, String methodName) {
         try {
-            for (Method method : Class.forName(className, false, XposedEntry.classLoader).getMethods()) {
+            for (Method method : Class.forName(className, false, XServer.classLoader).getMethods()) {
                 if (method.getName().equals(methodName)) return method;
             }
             return null;
@@ -40,7 +40,7 @@ public class MethodHandler {
     public static Method getMethodbyJavaName(String javaName) {
         String classname=javaName.substring(0,javaName.indexOf("->"));
         String method=javaName.substring(javaName.indexOf("->")+2);
-        Class clz=ClassHandler.findClassbyJavaName(classname,XposedEntry.classLoader);
+        Class clz=ClassHandler.findClassbyJavaName(classname,XServer.classLoader);
         if(clz==null)return null;
         for (Method m:clz.getDeclaredMethods()) {
             if(Utils.getJavaName(m).equals(javaName))return m;

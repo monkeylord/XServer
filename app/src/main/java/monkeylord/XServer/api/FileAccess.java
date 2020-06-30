@@ -18,7 +18,7 @@ import monkeylord.XServer.XServer;
 import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.utils.NanoHTTPD;
 
-import static monkeylord.XServer.XposedEntry.sPrefs;
+//import static monkeylord.XServer.XposedEntry.sPrefs;
 import static monkeylord.XServer.utils.NanoHTTPD.newChunkedResponse;
 import static monkeylord.XServer.utils.NanoHTTPD.newFixedLengthResponse;
 
@@ -75,7 +75,7 @@ public class FileAccess implements XServer.Operation {
             }
         }else{
             HashMap<String, Object> map = new HashMap<>();
-            String appName =  sPrefs.getString("targetApp", null);
+            String appName =  XServer.currentApp;
             map.put("dir", (appName!=null)?"/data/data/"+ appName: "/");
             try {
                 return newFixedLengthResponse(XServer.render(map, "pages/filemgr.html"));
