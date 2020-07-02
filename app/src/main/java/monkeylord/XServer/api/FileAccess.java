@@ -1,24 +1,17 @@
 package monkeylord.XServer.api;
 
-import android.content.Context;
-import android.content.ContextWrapper;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import freemarker.template.TemplateException;
 import monkeylord.XServer.XServer;
-import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.utils.NanoHTTPD;
 
-//import static monkeylord.XServer.XposedEntry.sPrefs;
 import static monkeylord.XServer.utils.NanoHTTPD.newChunkedResponse;
 import static monkeylord.XServer.utils.NanoHTTPD.newFixedLengthResponse;
 

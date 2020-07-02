@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import monkeylord.XServer.XServer;
-import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.ClassHandler;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;

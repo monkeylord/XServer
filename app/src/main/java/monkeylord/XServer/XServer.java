@@ -1,6 +1,7 @@
 package monkeylord.XServer;
 
 import android.app.Application;
+import android.content.res.AssetManager;
 import android.os.Process;
 
 import java.io.BufferedReader;
@@ -42,6 +43,7 @@ public class XServer extends NanoWSD {
     static Hashtable<String, wsOperation> wsroute = new Hashtable<String, wsOperation>();
     public static ClassLoader classLoader = ClassLoader.getSystemClassLoader();
     public static String currentApp = "";
+    public static AssetManager assetManager;
 
     public XServer(int port) {
         this(port, null);
@@ -119,7 +121,7 @@ public class XServer extends NanoWSD {
         String uri = session.getUri();
         Operation operation = route.get(uri.toLowerCase());
         if (operation == null)try{
-            XposedEntry.res.getAssets().open(uri.substring(1));
+            assetManager.open(uri.substring(1));
             operation = new assets();
         }catch (IOException e){
             operation = route.get("/");
@@ -137,13 +139,13 @@ public class XServer extends NanoWSD {
 
     //简单的模板引擎
     public static String render(Map<String, Object> model, String page) throws IOException, TemplateException {
-        Template tmp = new Template(page, new InputStreamReader(XposedEntry.res.getAssets().open(page)), null);
+        Template tmp = new Template(page, new InputStreamReader(assetManager.open(page)), null);
         StringWriter sw = new StringWriter();
         tmp.process(model, sw);
         return sw.toString();
     }
     public static String file(String page) throws IOException, TemplateException {
-        InputStreamReader reader = new InputStreamReader(XposedEntry.res.getAssets().open(page));
+        InputStreamReader reader = new InputStreamReader(assetManager.open(page));
         int ch;
         StringWriter sw = new StringWriter();
         while ((ch = reader.read())!=-1){

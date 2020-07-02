@@ -71,6 +71,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
 
     void setXposedHookProvider(){
         XServer.classLoader = classLoader;
+        XServer.assetManager = res.getAssets();
         HookHandler.setProvider(new HookHandler.HookProvider() {
             // 复用Hook，否则在大量Hook时会OOM
             HashMap<XServer_MethodHook, XC_MethodHook> pairs = new HashMap<>();
