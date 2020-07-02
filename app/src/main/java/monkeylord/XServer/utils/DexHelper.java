@@ -4,8 +4,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import de.robv.android.xposed.XposedBridge;
-
 public class DexHelper {
     public static String[] getClassesInDex(ClassLoader CL) {
         String[] result = {};
@@ -21,7 +19,7 @@ public class DexHelper {
                 Field field1 = element.getClass().getDeclaredField("dexFile");
                 field1.setAccessible(true);
                 Object DexFile = field1.get(element);
-                XposedBridge.log(DexFile.getClass().getName());
+                //XposedBridge.log(DexFile.getClass().getName());
                 for (Method m : DexFile.getClass().getDeclaredMethods()) {
                     // XposedBridge.log("DEXFILE:"+m.getName());
                     if (m.getName().equalsIgnoreCase("getClassNameList")) {

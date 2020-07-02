@@ -9,9 +9,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
-import de.robv.android.xposed.XposedBridge;
-import monkeylord.XServer.XposedEntry;
-
 public class MemoryHandler {
     static HashMap<String, Method> Memory = new HashMap<>();
     static {
