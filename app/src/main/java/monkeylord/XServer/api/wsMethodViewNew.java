@@ -1,6 +1,7 @@
 package monkeylord.XServer.api;
 
 import android.os.Process;
+import android.util.Log;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -137,13 +138,13 @@ public class wsMethodViewNew implements XServer.wsOperation {
                     stacks.add(element.getClassName() + "." + element.getMethodName() + " : " + element.getLineNumber());
                 }
                 call.put("stackTrace",stacks);
-                param.setResult(
-                        ObjectHandler.parseObject(
-                                // 格式化一下更可读
-                                // TODO: 使用fastjson的格式化
-                                new netUtil(server + "/invoke2", new org.json.JSONObject(call.toJSONString()).toString(2)).getRet()
-                        )
-                );
+                Object result = ObjectHandler.parseObject(new netUtil(server + "/invoke2", new org.json.JSONObject(call.toJSONString()).toString(2)).getRet());
+                Log.e("[XServer Debug]", "result: " + result);
+                if(result instanceof Invoke_New.XServerWrappedThrowable){
+                    if(((Invoke_New.XServerWrappedThrowable)result).shouldPassthough)
+                        param.setThrowable(((Invoke_New.XServerWrappedThrowable)result).getThrowable());
+                }
+                else param.setResult(result);
             }
         }
 

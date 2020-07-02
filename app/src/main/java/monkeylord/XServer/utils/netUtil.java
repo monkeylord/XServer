@@ -24,6 +24,7 @@ public class netUtil extends Thread {
     String ret;
     String error;
     List<Proxy> proxys;
+    int status;
 
     public netUtil(String URL, String data) {
         try {
@@ -86,7 +87,8 @@ public class netUtil extends Thread {
             // flush输出流的缓冲
             printWriter.flush();
             //开始获取数据
-            BufferedInputStream bis = new BufferedInputStream(httpURLConnection.getInputStream());
+            status = httpURLConnection.getResponseCode();
+            BufferedInputStream bis = new BufferedInputStream((httpURLConnection.getResponseCode()!=200)?httpURLConnection.getErrorStream():httpURLConnection.getInputStream());
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             int len;
             byte[] arr = new byte[1024];

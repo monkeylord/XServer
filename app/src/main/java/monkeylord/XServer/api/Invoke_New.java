@@ -7,18 +7,27 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import monkeylord.XServer.XServer;
-import monkeylord.XServer.XposedEntry;
 import monkeylord.XServer.handler.MethodHandler;
 import monkeylord.XServer.handler.ObjectHandler;
+import monkeylord.XServer.utils.NanoHTTPD;
 
 //处理反射调用的另一个接口
-public class Invoke_New extends BaseOperation {
+public class Invoke_New implements XServer.Operation {
     @Override
-    public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
+    public NanoHTTPD.Response handle(NanoHTTPD.IHTTPSession session){
+        Map<String, String> files = new HashMap<String, String>();
+        Map<String, String> headers = null;
+        try {
+            headers = session.getHeaders();
+            session.parseBody(files);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        String uri = session.getUri();
         StringBuilder sb = new StringBuilder();
         try {
             Log.d("XServer", "Invoke2 postData:"+files.get("postData"));
@@ -35,16 +44,18 @@ public class Invoke_New extends BaseOperation {
             method.setAccessible(true);
             sb.append(ObjectHandler.saveObject(method.invoke(thisobj, params)));
         } catch (Exception e) {
-            sb.append(e.getLocalizedMessage());
+            sb.append(e.getMessage());
             sb.append("\r\n");
             for (StackTraceElement st:e.getStackTrace()) {
                 sb.append(st.toString());
                 sb.append('\n');
             }
             e.printStackTrace();
+            Log.i("[XServer Debug]", sb.toString() );
+            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR,NanoHTTPD.MIME_PLAINTEXT,ObjectHandler.saveObject(new XServerWrappedThrowable(e.getCause(),true)));
         }
         Log.d("XServer", "Invoke2 return:"+sb.toString());
-        return sb.toString();
+        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK,NanoHTTPD.MIME_PLAINTEXT,sb.toString());
     }
     public static boolean isMe(){
         StackTraceElement[] stacks = Thread.currentThread().getStackTrace();
@@ -52,5 +63,27 @@ public class Invoke_New extends BaseOperation {
             if(stacks[i].getClassName().equals(Invoke_New.class.getName()))return true;
         }
         return false;
+    }
+    public class XServerWrappedThrowable {
+        Throwable throwable;
+        String atip = "Obviously something is thrown by the method, change <shouldpassthough> to false if you want response handler ignore the throwable";
+        boolean shouldPassthough;
+        String message;
+        String stacks;
+
+        XServerWrappedThrowable(Throwable throwable, boolean shouldPassthough){
+            this.throwable = throwable;
+            this.message = throwable.toString();
+            this.shouldPassthough = shouldPassthough;
+            this.stacks = JSON.toJSONString(throwable.getStackTrace(),true);
+        }
+
+        XServerWrappedThrowable(Throwable throwable){
+            this(throwable,false);
+        }
+
+        public Throwable getThrowable() {
+            return throwable;
+        }
     }
 }
