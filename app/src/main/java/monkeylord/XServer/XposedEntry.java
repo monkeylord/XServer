@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Process;
 
 import java.lang.reflect.Member;
+import java.util.HashMap;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
@@ -71,16 +72,18 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     void setXposedHookProvider(){
         XServer.classLoader = classLoader;
         HookHandler.setProvider(new HookHandler.HookProvider() {
-            XC_MethodHook myCallback = null;
+            // 复用Hook，否则在大量Hook时会OOM
+            HashMap<XServer_MethodHook, XC_MethodHook> pairs = new HashMap<>();
             @Override
             public Unhook hookMethod(Member hookMethod, final XServer_MethodHook mycallback) {
-                XC_MethodHook myCallback = new XC_MethodHook() {
+                XC_MethodHook myCallback = pairs.get(mycallback);
+                if(myCallback==null)myCallback = new XC_MethodHook() {
                     XServer_MethodHook callback = mycallback;
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         super.beforeHookedMethod(param);
                         XServer_Param xsParam = new XServer_Param();
-                        xsParam.args = param.args;
+                        xsParam.args = param.args==null ? new Object[0] : param.args;
                         xsParam.method = param.method;
                         xsParam.thisObject = param.thisObject;
                         xsParam.throwable = param.getThrowable();
@@ -106,6 +109,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
                         else param.setResult(xsParam.result);
                     }
                 };
+                pairs.put(mycallback,myCallback);
                 Object unhook = XposedBridge.hookMethod(hookMethod, myCallback);
                 return new Unhook(hookMethod, unhook);
             }

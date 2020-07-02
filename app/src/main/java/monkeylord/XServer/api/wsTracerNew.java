@@ -121,35 +121,57 @@ public class wsTracerNew implements XServer.wsOperation {
 
     // 包装一下就好，将显示相关的内容交给前端去处理
     private class hook extends XServer_MethodHook {
+        boolean loopLockBefore = false;
+        boolean loopLockAfter = false;
+
         @Override
         public void beforeHookedMethod(XServer_Param param) throws Throwable {
             super.beforeHookedMethod(param);
-            JSONObject call = new JSONObject();
-            call.put("type","call");
-            call.put("tid", Process.myTid());
-            call.put("elapsed", Process.getElapsedCpuTime());
-            call.put("method",Utils.getJavaName((Method) param.method));
-            call.put("this", ObjectHandler.briefObject(param.thisObject));
-            JSONArray params = new JSONArray();
-            for (Object arg:param.args) { params.add(ObjectHandler.briefObject(arg)); }
-            call.put("params",params);
-
-            websocket.trySend(call.toJSONString());
+            if(loopLockBefore || loopLockAfter){
+                Log.e("[XServer Debug]", "Avoiding Loop on " + Utils.getJavaName((Method) param.method));
+                return;
+            }
+            try {
+                loopLockBefore = true;
+                JSONObject call = new JSONObject();
+                call.put("type", "call");
+                call.put("tid", Process.myTid());
+                call.put("elapsed", Process.getElapsedCpuTime());
+                call.put("method", Utils.getJavaName((Method) param.method));
+                call.put("this", ObjectHandler.briefObject(param.thisObject));
+                JSONArray params = new JSONArray();
+                for (Object arg : param.args) {
+                    params.add(ObjectHandler.briefObject(arg));
+                }
+                call.put("params", params);
+                websocket.trySend(call.toJSONString());
+            }finally {
+                loopLockBefore = false;
+            }
         }
 
         @Override
         public void afterHookedMethod(XServer_Param param) throws Throwable {
             super.afterHookedMethod(param);
-            JSONObject result = new JSONObject();
-            result.put("type","result");
-            result.put("tid", Process.myTid());
-            result.put("elapsed", Process.getElapsedCpuTime());
-            result.put("method",Utils.getJavaName((Method) param.method));
-            result.put("this", ObjectHandler.briefObject(param.thisObject));
-            result.put("result",ObjectHandler.briefObject(param.getResult()));
-            if(param.hasThrowable())result.put("throw",ObjectHandler.briefObject(param.getThrowable()));
+            if(loopLockBefore || loopLockAfter){
+                Log.e("[XServer Debug]", "Avoiding Loop on " + Utils.getJavaName((Method) param.method));
+                return;
+            }
+            try {
+                loopLockAfter = true;
+                JSONObject result = new JSONObject();
+                result.put("type","result");
+                result.put("tid", Process.myTid());
+                result.put("elapsed", Process.getElapsedCpuTime());
+                result.put("method",Utils.getJavaName((Method) param.method));
+                result.put("this", ObjectHandler.briefObject(param.thisObject));
+                result.put("result",ObjectHandler.briefObject(param.getResult()));
+                if(param.hasThrowable())result.put("throw",ObjectHandler.briefObject(param.getThrowable()));
 
-            websocket.trySend(result.toJSONString());
+                websocket.trySend(result.toJSONString());
+            }finally {
+                loopLockAfter = false;
+            }
         }
     }
 
