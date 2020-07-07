@@ -30,7 +30,7 @@ XServer是一个用于对方法进行分析的Xposed插件，它针对的是“�
    3. 选择应用后直接重启设备最简单，如果你使用模拟器的话。
 5. 通过ADB转发XServer端口：`adb forward tcp:8000 tcp:8000`
    1. 目标应用可能存在多个进程，针对这种情况，XServer在进程PID对应的端口也打开了监听。若8000端口对应的进程不是目标应用主进程，可以使用另一个命令修正：`adb forward tcp:8000 tcp:[目标进程PID]`
-6. 通过http://127.0.0.1:8000/访问XServer
+6. 通过http://127.0.0.1:8000/ 访问XServer
 
 #### 通过Frida启动
 
@@ -40,7 +40,7 @@ XServer是一个用于对方法进行分析的Xposed插件，它针对的是“�
    2. 将XServer对应APK放置在`/data/local/tmp/xserver.apk`
 3. 使用Frida加载XServer.js以启动XServer：`frida -U [目标应用包名或进程PID] -l XServer.js`
 4. 通过ADB转发XServer端口：`adb forward tcp:8000 tcp:8000`
-5. 通过http://127.0.0.1:8000/访问XServer
+5. 通过http://127.0.0.1:8000/ 访问XServer
 
 #### 通过其他Hook框架启动
 
