@@ -73,8 +73,8 @@ public class XServer extends NanoWSD {
         parsers.put("[B", new ByteArrayParser());
 
         //注册WebSocket路由
-        wsroute.put("/", new wsTracer());
-        wsroute.put("/methodview", new wsMethodView());
+        //wsroute.put("/", new wsTracer());
+        //wsroute.put("/methodview", new wsMethodView());
         wsroute.put("/methodview2", new wsMethodViewNew());
         wsroute.put("/wsTraceNew", new wsTracerNew());
         //注册HTTP请求路由
