@@ -64,7 +64,7 @@ function registerHookProvider(){
                         // New Hook
                         Hooks[fullname] = [Java.retain(mycallback)]
                     }else{
-                        // TODO: 筛选过滤，如果已经有了就不要重复Hook
+                        // 筛选过滤，如果已经有了就不要重复Hook
                         var isNewCallback = Hooks[fullname].every(function(callback){
                             console.log("isEqual: " + callback.equals(mycallback))
                             return !callback.equals(mycallback)
