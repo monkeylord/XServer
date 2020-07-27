@@ -30,6 +30,7 @@ import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.objectparser.BooleanParser;
 import monkeylord.XServer.objectparser.ByteArrayParser;
 import monkeylord.XServer.objectparser.GenericParser;
+import monkeylord.XServer.objectparser.HashMapParser;
 import monkeylord.XServer.objectparser.IntParser;
 import monkeylord.XServer.objectparser.StoredObjectParser;
 import monkeylord.XServer.objectparser.StringParser;
@@ -67,6 +68,7 @@ public class XServer extends NanoWSD {
         parsers.put("Ljava.lang.Integer;", new IntParser());
         parsers.put("Ljava.lang.Boolean;", new BooleanParser());
         parsers.put("Ljava.lang.String;", new StringParser());
+        parsers.put("Ljava.util.HashMap;", new HashMapParser());
         parsers.put("I", new IntParser());
         parsers.put("Z", new BooleanParser());
         parsers.put("byte", new ByteArrayParser());
