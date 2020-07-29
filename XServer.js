@@ -24,6 +24,8 @@ var typeTranslation = {
     "D":"java.lang.Double"
 }
 
+const DEBUG = false
+
 /*
 核心方法
 技术原理：使用Frida注册符合该接口的Provider类
@@ -40,12 +42,12 @@ function registerHookProvider(){
                 implementation: function (hookMethod, mycallback) {
                     
                     // 反射方法在Frida中无法使用，需要通过Frida得到这个方法
-                    console.log(hookMethod)
-                    console.log(mycallback)
-                    var refMethod = Java.use(hookMethod.getClass().getName())
+                    console.log("[XServer] Hook ", hookMethod, "with", mycallback)
+
+                    var refMethod = Java.use(hookMethod.$className)
                     var method = Java.cast(hookMethod, refMethod)
                     var clazz = method.getDeclaringClass().getName()
-                    var mtdname = (hookMethod.getClass().getName()=="java.lang.reflect.Constructor")? "$init": method.getName()
+                    var mtdname = (hookMethod.$className=="java.lang.reflect.Constructor")? "$init": method.getName()
                     var overload = method.getParameterTypes().map(function(clz){return clz.getName()})
                     var fridaMethod = Java.use(clazz)[mtdname].overload.apply(Java.use(clazz)[mtdname], overload)
                     
@@ -66,7 +68,7 @@ function registerHookProvider(){
                     }else{
                         // 筛选过滤，如果已经有了就不要重复Hook
                         var isNewCallback = Hooks[fullname].every(function(callback){
-                            console.log("isEqual: " + callback.equals(mycallback))
+                            if(DEBUG)console.log("isEqual: " + callback.equals(mycallback))
                             return !callback.equals(mycallback)
                         })
                         
@@ -75,19 +77,30 @@ function registerHookProvider(){
                     
                     // 实施Hook
                     fridaMethod.implementation = function(){
-                        console.log(Hooks[fullname])
-                        console.log("called")
-                        console.log(this)
+                        console.log("[XServer]", "Hooked method called:", paramMethod)
+                        console.log("[XServer]", "Receiver:", this)
+                        console.log("[XServer]", "Hooks", Hooks[fullname])
+                        
                         var param = Java.use("monkeylord.XServer.handler.Hook.XServer_Param").$new()
                         param.method.value = paramMethod
                         param.thisObject.value = (fridaMethod.type == 3)? this : null
                         // 准备参数
                         var args = arguments
                         var jarr = Object.keys(arguments).map(function(key){return args[key]})
+                        
                         fridaMethod.argumentTypes.forEach(function(type,index){
-                            if(type.type!="pointer")jarr[index]=Java.use(typeTranslation[type.name]).valueOf(jarr[index])
-                            if(type.className == "java.lang.String")jarr[index]=Java.use("java.lang.String").$new(jarr[index])
+                            var env = Java.vm.getEnv()
+                            if(DEBUG){
+                                console.log(JSON.stringify(type))
+                                console.log(jarr[index])
+                                console.log(JSON.stringify(type.toJni(jarr[index], env)))
+                                console.log(type.toJni(jarr[index], env).isNull)
+                            }
+                            if(type.type != "pointer")jarr[index] = Java.use(typeTranslation[type.name]).valueOf(jarr[index])
+                            else if(type.className == "java.lang.String")jarr[index]=Java.use("java.lang.String").$new(jarr[index])
+                            else jarr[index] = Java.classFactory._getType("java.lang.Object").fromJni(type.toJni(jarr[index], env), env, false)
                         })
+                        
                         param.args.value = Java.array("java.lang.Object", jarr)
                         // 开始调用Callbacks
                         
@@ -102,13 +115,17 @@ function registerHookProvider(){
                         
                         
                         // 处理原方法调用
-                        console.log("#value")
-                        console.log(param.args.value.length)
-                        console.log(JSON.stringify(param.args.value))
-                        
+                        if(DEBUG){
+                            console.log("[DEBUG]", "Unwrap arguments")
+                            console.log("[DEBUG]", "arguments length", param.args.value.length)
+                            console.log("[DEBUG]", "arguments array", JSON.stringify(param.args.value))
+                            param.args.value.forEach(function(arg, index){
+                                console.log("[DEBUG]", "argument"+index, JSON.stringify(arg))
+                            })
+                        }
+
                         var newargs = []
                         for(var i = 0; i<param.args.value.length; i++)newargs[i] = param.args.value[i]
-                        console.log(newargs)
                         
                         fridaMethod.argumentTypes.forEach(function(type,index){
                             if(type.type!="pointer"){
@@ -132,15 +149,36 @@ function registerHookProvider(){
                                         value = basicObj.doubleValue();
                                 }
                                 newargs[index]=value
-                                //console.log(jarr[index]._proto)
-                                //console.log("AFTERCAST: ",JSON.stringify(Object.keys(jarr[index])))
+                            }else if(type.name.startsWith("[")){
+                                var env = Java.vm.getEnv()
+                                newargs[index] = type.fromJni(Java.classFactory._getType("java.lang.Object").toJni(newargs[index], env), env, true)
+                            }else{
+                                newargs[index] = Java.cast(newargs[index], Java.use(newargs[index].$className))
                             }
                         })
                         
                         try{
-                            if(!param.returnEarly.value)param.setResult(fridaMethod.apply((fridaMethod.type == 3)? param.thisObject.value: Java.use(clazz), newargs))  // Call original
+                            if(!param.returnEarly.value){
+                                var env = Java.vm.getEnv()
+                                if(DEBUG){
+                                    console.log("[DEBUG]", "Invoking original method", fridaMethod.methodName)
+                                    console.log("[DEBUG]", "Method type:", fridaMethod.type)
+                                    newargs.forEach(function(arg, index){
+                                        console.log("[DEBUG]","argument"+index, JSON.stringify(arg))
+                                    })
+                                }
+                                var result = fridaMethod.apply((fridaMethod.type == 3)? Java.cast(param.thisObject.value, Java.use(this.$className)): Java.use(clazz), newargs)
+                                var resultObject
+                                if(result == undefined)resultObject = null
+                                else if(fridaMethod._p[4].type!="pointer")resultObject = Java.use(typeTranslation[fridaMethod._p[4].name]).valueOf(result)
+                                else resultObject = Java.classFactory._getType("java.lang.Object").fromJni(fridaMethod._p[4].toJni(result, env), env, false)
+                                param.setResult(resultObject)  // Call original
+                            }
                         }catch(e){
-                            param.setThrowable(e.getCause())
+                            console.log(e)
+                            if(e.getCause){
+                                param.setThrowable(e.getCause())
+                            }
                         }
                         //param.result.value = "123"
                         
@@ -162,8 +200,8 @@ function registerHookProvider(){
                         }
                         
                         //var r = Hooks[fullname][0].afterHookedMethod(param)
-                        console.log(param.returnEarly.value)
-                        return param.result.value
+                        if(DEBUG)console.log("[DEBUG]","Return early:",param.returnEarly.value)
+                        return (fridaMethod._p[4].type=="void") ? undefined : param.result.value
                     }
                     
                     var unhook = Java.use("monkeylord.XServer.handler.Hook.Unhook").$new(hookMethod, mycallback)
@@ -178,10 +216,10 @@ function registerHookProvider(){
                     // 反射方法在Frida中无法使用，从Frida得到这个方法
                     // Frida Hook里additionalObj是对应的callback
                     console.log("Unhook")
-                    var refMethod = Java.use(hookMethod.getClass().getName())
+                    var refMethod = Java.use(hookMethod.$className)
                     var method = Java.cast(hookMethod, refMethod)
                     var clazz = method.getDeclaringClass().getName()
-                    var mtdname = (hookMethod.getClass().getName()=="java.lang.reflect.Constructor")? "$init": method.getName()
+                    var mtdname = (hookMethod.$className=="java.lang.reflect.Constructor")? "$init": method.getName()
                     var overload = method.getParameterTypes().map(function(clz){return clz.getName()})
                     
                     // fullname是方法的唯一标识符
