@@ -23,6 +23,8 @@ var typeTranslation = {
     "F":"java.lang.Float",
     "D":"java.lang.Double"
 }
+var XServerCL = null
+var XServerFactory = null
 
 const DEBUG = false
 
@@ -31,8 +33,8 @@ const DEBUG = false
 技术原理：使用Frida注册符合该接口的Provider类
 */
 function registerHookProvider(){
-    var provideInterface = Java.use("monkeylord.XServer.handler.HookHandler$HookProvider")
-    var provider = Java.registerClass({
+    var provideInterface = XServerFactory.use("monkeylord.XServer.handler.HookHandler$HookProvider")
+    var provider = XServerFactory.registerClass({
         name: 'FridaHookProvider',
         implements: [provideInterface],
         methods: {
@@ -81,7 +83,7 @@ function registerHookProvider(){
                         console.log("[XServer]", "Receiver:", this)
                         console.log("[XServer]", "Hooks", Hooks[fullname])
                         
-                        var param = Java.use("monkeylord.XServer.handler.Hook.XServer_Param").$new()
+                        var param = XServerFactory.use("monkeylord.XServer.handler.Hook.XServer_Param").$new()
                         param.method.value = paramMethod
                         param.thisObject.value = (fridaMethod.type == 3)? this : null
                         // 准备参数
@@ -96,7 +98,8 @@ function registerHookProvider(){
                                 console.log(JSON.stringify(type.toJni(jarr[index], env)))
                                 console.log(type.toJni(jarr[index], env).isNull)
                             }
-                            if(type.type != "pointer")jarr[index] = Java.use(typeTranslation[type.name]).valueOf(jarr[index])
+                            if(jarr[index]==null)jarr[index] = null
+                            else if(type.type != "pointer")jarr[index] = Java.use(typeTranslation[type.name]).valueOf(jarr[index])
                             else if(type.className == "java.lang.String")jarr[index]=Java.use("java.lang.String").$new(jarr[index])
                             else jarr[index] = Java.classFactory._getType("java.lang.Object").fromJni(type.toJni(jarr[index], env), env, false)
                         })
@@ -128,7 +131,8 @@ function registerHookProvider(){
                         for(var i = 0; i<param.args.value.length; i++)newargs[i] = param.args.value[i]
                         
                         fridaMethod.argumentTypes.forEach(function(type,index){
-                            if(type.type!="pointer"){
+                            if(newargs[index]==null)newargs[index] = null
+                            else if(type.type!="pointer"){
                                 //console.log("CAST: ",JSON.stringify(Object.keys(jarr[index])))
                                 var value
                                 var basicObj = Java.cast(jarr[index],Java.use(typeTranslation[type.name]))
@@ -204,7 +208,7 @@ function registerHookProvider(){
                         return (fridaMethod._p[4].type=="void") ? undefined : param.result.value
                     }
                     
-                    var unhook = Java.use("monkeylord.XServer.handler.Hook.Unhook").$new(hookMethod, mycallback)
+                    var unhook = XServerFactory.use("monkeylord.XServer.handler.Hook.Unhook").$new(hookMethod, mycallback)
                     
                     return unhook
                 }
@@ -237,7 +241,7 @@ function registerHookProvider(){
     console.log("[XServer]HookProvider created:" + provider)
     //var myprovider = Java.ClassFactory.cast(provider, provideInterface)
     //console.log("casted")
-    var HookHandler = Java.use("monkeylord.XServer.handler.HookHandler");
+    var HookHandler = XServerFactory.use("monkeylord.XServer.handler.HookHandler");
     //console.log(myprovider)
     HookHandler.setProvider(provider.$new())
     console.log("[XServer]HookProvider registered")
@@ -248,8 +252,21 @@ function registerHookProvider(){
 */
 
 function loadXServer(path){
-    Java.openClassFile(path).load()
-    var XServer = Java.classFactory.use("monkeylord.XServer.XServer");
+    // Fix CodeCache, in case App does not have file permission
+    var ActivityThread = Java.use("android.app.ActivityThread")
+    var app = ActivityThread.currentApplication()
+    Java.classFactory.cacheDir = "/data/data/" + app.getPackageName() + "/cache"
+    Java.classFactory.codeCacheDir = "/data/data/" + app.getPackageName() + "/code_cache"
+    
+    // Load
+    //Java.openClassFile(path).load()
+    var DexClassLoader = Java.use("dalvik.system.DexClassLoader");
+    XServerCL = DexClassLoader.$new(path, Java.classFactory.codeCacheDir, null, DexClassLoader.getSystemClassLoader());
+    XServerFactory = Java.ClassFactory.get(XServerCL)
+    XServerFactory.cacheDir = "/data/data/" + app.getPackageName() + "/cache"
+    XServerFactory.codeCacheDir = "/data/data/" + app.getPackageName() + "/code_cache"
+
+    var XServer = XServerFactory.use("monkeylord.XServer.XServer");
     console.log("[XServer]XServer loaded in APP: " + XServer)
 }
 
@@ -257,20 +274,20 @@ function setAsset(path){
     var AssetManager = Java.use("android.content.res.AssetManager")
     var assets = AssetManager.$new()
     assets.addAssetPath(path)
-    var XServer =  Java.classFactory.use("monkeylord.XServer.XServer");
+    var XServer =  XServerFactory.use("monkeylord.XServer.XServer");
     XServer.assetManager.value = assets
     console.log("[XServer]XServer Assets loaded from " + path)
 }
 
 function setClassLoader(){
-    var XServer =  Java.classFactory.use("monkeylord.XServer.XServer");
+    var XServer = XServerFactory.use("monkeylord.XServer.XServer");
     var ActivityThread = Java.use("android.app.ActivityThread")
     console.log("[XServer]ClassLoader used by currentApplication:" + ActivityThread.currentApplication().getClassLoader())
     XServer.classLoader.value = ActivityThread.currentApplication().getClassLoader()
 }
 
 function startXServer(port){
-    var XServer = Java.classFactory.use("monkeylord.XServer.XServer");
+    var XServer = XServerFactory.use("monkeylord.XServer.XServer");
     XServer.$new(port)
     console.log("[XServer]HttpService started at " + port)
     console.log("[XServer]Tips: adb forward tcp:8000 tcp:"+port)
