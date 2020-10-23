@@ -136,21 +136,23 @@ function registerHookProvider(){
                                 //console.log("CAST: ",JSON.stringify(Object.keys(jarr[index])))
                                 var value
                                 var basicObj = Java.cast(jarr[index],Java.use(typeTranslation[type.name]))
+                                console.log(JSON.stringify(type))
+                                console.log(JSON.stringify(basicObj))
                                 switch(type.name){
                                     case "Z":
-                                        value = basicObj.booleanValue();
+                                        value = basicObj.booleanValue();break;
                                     case "B":
-                                        value = basicObj.byteValue();
+                                        value = basicObj.byteValue();break;
                                     case "S":
-                                        value = basicObj.shortValue();
+                                        value = basicObj.shortValue();break;
                                     case "I":
-                                        value = basicObj.intValue();
+                                        value = basicObj.intValue();break;
                                     case "J":
-                                        value = basicObj.longValue();
+                                        value = basicObj.longValue();break;
                                     case "F":
-                                        value = basicObj.floatValue();
+                                        value = basicObj.floatValue();break;
                                     case "D":
-                                        value = basicObj.doubleValue();
+                                        value = basicObj.doubleValue();break;
                                 }
                                 newargs[index]=value
                             }else if(type.name.startsWith("[")){
