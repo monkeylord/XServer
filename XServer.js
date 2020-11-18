@@ -44,7 +44,7 @@ function registerHookProvider(){
                 implementation: function (hookMethod, mycallback) {
                     
                     // 反射方法在Frida中无法使用，需要通过Frida得到这个方法
-                    console.log("[XServer] Hook ", hookMethod, "with", mycallback)
+                    console.log("[XServer] Hook ", hookMethod.getName(), "with", mycallback)
 
                     var refMethod = Java.use(hookMethod.$className)
                     var method = Java.cast(hookMethod, refMethod)
@@ -79,7 +79,7 @@ function registerHookProvider(){
                     
                     // 实施Hook
                     fridaMethod.implementation = function(){
-                        console.log("[XServer]", "Hooked method called:", paramMethod)
+                        console.log("[XServer]", "Hooked method called:", paramMethod.getName())
                         console.log("[XServer]", "Receiver:", this)
                         console.log("[XServer]", "Hooks", Hooks[fullname])
                         
@@ -93,6 +93,7 @@ function registerHookProvider(){
                         fridaMethod.argumentTypes.forEach(function(type,index){
                             var env = Java.vm.getEnv()
                             if(DEBUG){
+                                console.log("[DECBUG]ArgInfo "+index)
                                 console.log(JSON.stringify(type))
                                 console.log(jarr[index])
                                 console.log(JSON.stringify(type.toJni(jarr[index], env)))
@@ -174,6 +175,9 @@ function registerHookProvider(){
                                     })
                                 }
                                 var result = fridaMethod.apply((fridaMethod.type == 3)? Java.cast(param.thisObject.value, Java.use(this.$className)): Java.use(clazz), newargs)
+                                if(DEBUG){
+                                    console.log("[DEBUG] Original Returned Object:"+ JSON.stringify(result))
+                                }
                                 var resultObject
                                 if(result == undefined)resultObject = null
                                 else if(fridaMethod._p[4].type!="pointer")resultObject = Java.use(typeTranslation[fridaMethod._p[4].name]).valueOf(result)
@@ -206,8 +210,24 @@ function registerHookProvider(){
                         }
                         
                         //var r = Hooks[fullname][0].afterHookedMethod(param)
-                        if(DEBUG)console.log("[DEBUG]","Return early:",param.returnEarly.value)
-                        return (fridaMethod._p[4].type=="void") ? undefined : param.result.value
+                        if(DEBUG){
+                            var env = Java.vm.getEnv()
+                            console.log("[DEBUG]","Return early:",param.returnEarly.value)
+                            //console.log("[DEBUG]","Return Object Type:",JSON.stringify(param.result.value.getClass()))
+                            console.log("[DEBUG]","Return Object:", JSON.stringify(param.result.value))
+                            console.log("[DEBUG]","Return Object Original Type:",JSON.stringify(fridaMethod._p[4]))
+                            if(fridaMethod._p[4].name.startsWith("["))console.log("[DEBUG]Return Object Casted:"+ JSON.stringify(fridaMethod._p[4].fromJni(Java.classFactory._getType("java.lang.Object").toJni(param.result.value, env), env, false)))
+                        }
+                        var returnObject
+                        if(fridaMethod._p[4].type=="void"){
+                            returnObject = undefined
+                        }else if(fridaMethod._p[4].name.startsWith("[")&&!fridaMethod._p[4].name.startsWith("[L")){
+                            returnObject = fridaMethod._p[4].fromJni(Java.classFactory._getType("java.lang.Object").toJni(param.result.value, env), env, false)
+                        }else{
+                            returnObject = param.result.value
+                        }
+                        return returnObject
+                        //return (fridaMethod._p[4].type=="void") ? undefined : param.result.value
                     }
                     
                     var unhook = XServerFactory.use("monkeylord.XServer.handler.Hook.Unhook").$new(hookMethod, mycallback)
