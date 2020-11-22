@@ -96,6 +96,18 @@ XServer内部使用自己定义的Hook接口，因此可以兼容其他Hook框�
 5. 可以在中间人工具中直接重放/invoke2请求，这会使对应的方法被再次调用
    1. 对于加解密方法，这可以直接调用加解密
    2. 对于网络请求方法，这可以再次触发网络请求
+   
+#### 注入Js脚本执行方法   
+
+XServer 接入Rhino 可动态注入脚本执行，调用指定方法。  
+例如调用监控 Application.onCreate() 方法
+```
+app.onCreate()
+```
+js环境中支持Application变量：app 可直接使用，导入类方式，参考[Rhino官方文档](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Rhino/Scripting_Java)
+
+![D8doQA.md.jpg](https://s3.ax1x.com/2020/11/22/D8doQA.md.jpg)
+
 
 ### XServer基础结构
 
