@@ -5,21 +5,20 @@ import java.util.HashMap;
 
 import monkeylord.XServer.handler.Hook.XServer_MethodHook;
 
-public class TraceHandler {
-    static TraceHandler instance = null;
+public class InterceptionHandler {
+    static InterceptionHandler instance = null;
     String[] shouldTrace = new String[]{};
     File traceFile;
     HashMap<String, XServer_MethodHook> hooks = new HashMap<>();
 
-    TraceHandler(){
+    InterceptionHandler(){
 
     }
-    static TraceHandler getInstance(){
-        if(instance==null)instance = new TraceHandler();
+    static InterceptionHandler getInstance(){
+        if(instance==null)instance = new InterceptionHandler();
         return instance;
     }
 
-    static 
 
 
 
