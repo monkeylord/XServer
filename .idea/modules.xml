@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/XServer.iml" filepath="$PROJECT_DIR$/XServer.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/XServer.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/XServer.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/rhino-android/XServer.rhino-android.iml" filepath="$PROJECT_DIR$/.idea/modules/rhino-android/XServer.rhino-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/p.XServer.iml" filepath="$PROJECT_DIR$/.idea/modules/p.XServer.iml" />
     </modules>
   </component>
 </project>
