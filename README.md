@@ -106,7 +106,7 @@ app.onCreate()
 ```
 js环境中支持Application变量：app 可直接使用，导入类方式，参考[Rhino官方文档](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Rhino/Scripting_Java)
 
-![D8doQA.md.jpg](https://s3.ax1x.com/2020/11/22/D8doQA.md.jpg)
+![D8doQA.md.jpg](https://s3.ax1x.com/2020/11/22/D8r6U0.jpg)
 
 
 ### XServer基础结构
