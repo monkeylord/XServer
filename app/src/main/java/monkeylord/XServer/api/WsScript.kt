@@ -46,7 +46,11 @@ class WsScript : wsOperation {
     }
 
     fun handleMessage(data: String?) {
-        engine.evalString(data ?: "", null as Array<*>?)
+        kotlin.runCatching {
+            engine.evalString(data ?: "", null as Array<*>?)
+        }.onFailure {
+            ws?.trySend(it.toString())
+        }
     }
 
 
