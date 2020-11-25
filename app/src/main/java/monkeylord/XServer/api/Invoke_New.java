@@ -67,7 +67,7 @@ public class Invoke_New implements XServer.Operation {
     public class XServerWrappedThrowable {
         Throwable throwable;
         String atip = "Obviously something is thrown by the method, change <shouldPassthough> to false if you want response handler ignore the throwable";
-        boolean shouldPassthough;
+        public boolean shouldPassthough;
         String message;
         String stacks;
 
