@@ -1,0 +1,119 @@
+<html>
+
+<head>
+    <title>Script</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+    <style>
+        #main {
+            width: 100%;
+            -webkit-box-orient: horizontal;
+            -moz-box-orient: horizontal;
+            box-orient: horizontal;
+            display: -webkit-box;
+            display: -moz-box;
+            margin: auto;
+            margin-top: 30px;
+            border: 10px solid #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+<div id="main" >
+
+    <div>
+        <h4>Script Content</h4>
+        <textarea id="script_data" style="width: 609px; height: 363px;">print(app)</textarea>
+        <p>
+            <button onclick="run()">Run</button>
+            <button onclick="clearLog()">Clear Log</button>
+            <button onclick="reconnect()">Reconnect</button>
+        </p>
+        <p>
+            app: current application
+        </p>
+    </div>
+
+    <div>
+        <p>LOG</p>
+        <p id="log_area" style="width: 609px;padding: 10px; overflow:auto;height: 363px; line-height: 0.5;font-size: 10px;"></p>
+
+    </div>
+
+</div>
+
+
+<script type="text/javascript">
+    var websocket = null;
+
+    function run() {
+        var script = document.getElementById("script_data").value
+        console.log("run..." + script)
+        if (websocket.readyState == websocket.OPEN) {
+            websocket.send(script)
+        } else {
+            appendLog("未连接")
+        }
+    }
+
+    let logArea = document.getElementById("log_area");
+
+    function appendLog(data) {
+        let p = document.createElement("p");
+        p.innerText = data;
+        logArea.append(p);
+    }
+
+    function clearLog() {
+        logArea.innerHTML = ""
+    }
+
+
+    function reconnect() {
+        closeWebSocket()
+        if ('WebSocket' in window) {
+            websocket = new WebSocket(document.location.origin.replace("http", "ws") + "/wsScript");
+            // websocket = new WebSocket("ws://127.0.0.1:8000/wsScript");  // Local Debug
+        } else {
+            alert('Current Browser Not support websocket')
+        }
+
+        //连接发生错误的回调方法
+        websocket.onerror = (event) => {
+            alert("Connection Error!");
+            console.log(event)
+        }
+
+        //连接成功建立的回调方法
+        websocket.onopen = () => {
+            appendLog("Connected!")
+        }
+
+        //接收到消息的回调方法
+        websocket.onmessage = (event) => {
+            let data = event.data;
+            appendLog(data);
+        }
+
+        //连接关闭的回调方法
+        websocket.onclose = function () {
+            appendLog("Closed")
+        }
+
+        // 关闭WebSocket连接
+        function closeWebSocket() {
+            if(websocket) {
+                websocket.close();
+            }
+        }
+
+    }
+    reconnect();
+
+    // 监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = closeWebSocket;
+</script>
+</body>
+
+</html>

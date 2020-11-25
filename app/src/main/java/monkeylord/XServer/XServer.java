@@ -1,14 +1,11 @@
 package monkeylord.XServer;
 
-import android.app.Application;
 import android.content.res.AssetManager;
 import android.os.Process;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -21,10 +18,10 @@ import monkeylord.XServer.api.Invoke;
 import monkeylord.XServer.api.Invoke_New;
 import monkeylord.XServer.api.MemoryView;
 import monkeylord.XServer.api.MethodView;
+import monkeylord.XServer.api.Script;
 import monkeylord.XServer.api.Tracer;
-import monkeylord.XServer.api.wsMethodView;
+import monkeylord.XServer.api.WsScript;
 import monkeylord.XServer.api.wsMethodViewNew;
-import monkeylord.XServer.api.wsTracer;
 import monkeylord.XServer.api.wsTracerNew;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.objectparser.BooleanParser;
@@ -54,7 +51,7 @@ public class XServer extends NanoWSD {
     public XServer(int port, Hashtable<String, Operation> route) {
         super(port);
         //确定应用名称
-        if(currentApp=="") {
+        if (currentApp == "") {
             try {
                 currentApp = (String) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentPackageName").invoke(null);
             } catch (Exception e) {
@@ -81,6 +78,8 @@ public class XServer extends NanoWSD {
         //wsroute.put("/methodview", new wsMethodView());
         wsroute.put("/methodview2", new wsMethodViewNew());
         wsroute.put("/wsTraceNew", new wsTracerNew());
+        wsroute.put(WsScript.getPATH(), new WsScript());
+
         //注册HTTP请求路由
         if (route != null) XServer.route = route;
         XServer.route.put("/", new index());
@@ -91,6 +90,7 @@ public class XServer extends NanoWSD {
         XServer.route.put("/invoke2", new Invoke_New());
         XServer.route.put("/memory", new MemoryView());
         XServer.route.put("/file", new FileAccess());
+        XServer.route.put("/script", new Script());
         try {
             //启动监听
             start(0, false);
@@ -98,6 +98,7 @@ public class XServer extends NanoWSD {
             e.printStackTrace();
         }
     }
+
     @Override
     protected WebSocket openWebSocket(IHTTPSession handshake) {
         //处理WebSocket路由
@@ -124,19 +125,21 @@ public class XServer extends NanoWSD {
         //处理路由
         String uri = session.getUri();
         Operation operation = route.get(uri.toLowerCase());
-        if (operation == null)try{
+        if (operation == null) try {
             assetManager.open(uri.substring(1));
             operation = new assets();
-        }catch (IOException e){
+        } catch (IOException e) {
             operation = route.get("/");
         }
         //return newFixedLengthResponse(operation.handle(uri, session.getParms(), headers, files));
         return operation.handle(session);
     }
+
     //供动态注册路由使用
     public void Register(String uri, Operation op) {
         route.put(uri, op);
     }
+
     public void Register(String uri, wsOperation op) {
         wsroute.put(uri, op);
     }
@@ -148,11 +151,12 @@ public class XServer extends NanoWSD {
         tmp.process(model, sw);
         return sw.toString();
     }
+
     public static String file(String page) throws IOException, TemplateException {
         InputStreamReader reader = new InputStreamReader(assetManager.open(page));
         int ch;
         StringWriter sw = new StringWriter();
-        while ((ch = reader.read())!=-1){
+        while ((ch = reader.read()) != -1) {
             sw.write(ch);
         }
         return sw.toString();
@@ -161,17 +165,21 @@ public class XServer extends NanoWSD {
     //定义序列化/反序列化器
     public interface ObjectParser {
         Object parse(String data);
+
         String generate(Object obj);
     }
+
     //定义HTTP请求处理器
     public interface Operation {
         Response handle(IHTTPSession session);
         //String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files);
     }
+
     //定义WebSocket处理器
     public interface wsOperation {
         WebSocket handle(IHTTPSession handshake);
     }
+
     //默认主页（以及调用模板引擎的示例）
     public class index implements XServer.Operation {
         @Override
@@ -191,6 +199,7 @@ public class XServer extends NanoWSD {
             }
         }
     }
+
     // 资源文件
     public class assets implements XServer.Operation {
         @Override
