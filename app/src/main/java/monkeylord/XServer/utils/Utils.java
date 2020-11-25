@@ -6,6 +6,8 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.reflect.Modifier.STATIC;
+
 public class Utils {
     private static final Map<Class<?>, String> PRIMITIVE_TO_SIGNATURE;
 
@@ -49,7 +51,17 @@ public class Utils {
     }
 
     public static String FieldDescription(Field field) {
-        return Modifier.toString(field.getModifiers()) + " " + field.getType() + " " + field.getName();
+        String s = Modifier.toString(field.getModifiers()) + " " + field.getType() + " " + field.getName();
+
+        if ((field.getModifiers() & STATIC) != 0) {
+            try {
+                field.setAccessible(true);
+                s += " :: " + field.get(null);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return s;
     }
 
     public static String getJavaName(Method method) {

@@ -1,5 +1,7 @@
 package monkeylord.XServer.api;
 
+import android.app.AndroidAppHelper;
+
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -11,9 +13,13 @@ public class Invoke extends BaseOperation {
     @Override
     public String handle(String url, Map<String, String> parms, Map<String, String> headers, Map<String, String> files) {
         StringBuilder sb = new StringBuilder();
-        Object thisobj;
+        Object thisobj = null;
         Object[] params;
-        thisobj = parms.get("thisobj").equals("null") ? null : ObjectHandler.objects.get(parms.get("thisobj"));
+        if ("app".equalsIgnoreCase(parms.get("thisobj"))) {
+            thisobj = AndroidAppHelper.currentApplication();
+        } else {
+            thisobj = parms.get("thisobj").equals("null") ? null : ObjectHandler.objects.get(parms.get("thisobj"));
+        }
 
         try {
             Method[] methods = Class.forName(parms.get("class"), false, XServer.classLoader).getDeclaredMethods();
