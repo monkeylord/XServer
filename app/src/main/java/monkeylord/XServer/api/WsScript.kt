@@ -1,10 +1,10 @@
 package monkeylord.XServer.api
 
-import android.app.AndroidAppHelper
 import android.os.Handler
 import android.os.HandlerThread
 import cn.vove7.rhino.RhinoHelper
 import cn.vove7.rhino.api.RhinoApi
+import monkeylord.XServer.XServer
 import monkeylord.XServer.XServer.wsOperation
 import monkeylord.XServer.utils.NanoHTTPD.IHTTPSession
 import monkeylord.XServer.utils.NanoWSD.WebSocket
@@ -36,8 +36,8 @@ class WsScript : wsOperation {
 
         private val engine by lazy {
             RhinoHelper(
-                    AndroidAppHelper.currentApplication(),
-                    mapOf("app" to AndroidAppHelper.currentApplication())
+                    XServer.currentApplication,
+                    mapOf("app" to XServer.currentApplication)
             )
         }
     }

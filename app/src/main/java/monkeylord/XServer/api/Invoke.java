@@ -1,7 +1,5 @@
 package monkeylord.XServer.api;
 
-import android.app.AndroidAppHelper;
-
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -16,7 +14,7 @@ public class Invoke extends BaseOperation {
         Object thisobj = null;
         Object[] params;
         if ("app".equalsIgnoreCase(parms.get("thisobj"))) {
-            thisobj = AndroidAppHelper.currentApplication();
+            thisobj = XServer.currentApplication;
         } else {
             thisobj = parms.get("thisobj").equals("null") ? null : ObjectHandler.objects.get(parms.get("thisobj"));
         }

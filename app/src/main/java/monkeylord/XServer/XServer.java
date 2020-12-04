@@ -1,5 +1,6 @@
 package monkeylord.XServer;
 
+import android.app.Application;
 import android.content.res.AssetManager;
 import android.os.Process;
 
@@ -43,6 +44,7 @@ public class XServer extends NanoWSD {
     public static ClassLoader classLoader = ClassLoader.getSystemClassLoader();
     public static String currentApp = "";
     public static AssetManager assetManager;
+    public static Application currentApplication = null;
 
     public XServer(int port) {
         this(port, null);
@@ -54,6 +56,7 @@ public class XServer extends NanoWSD {
         if (currentApp == "") {
             try {
                 currentApp = (String) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentPackageName").invoke(null);
+                currentApplication = (Application) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentApplication").invoke(null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
