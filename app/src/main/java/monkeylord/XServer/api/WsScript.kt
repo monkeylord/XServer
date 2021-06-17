@@ -36,8 +36,8 @@ class WsScript : wsOperation {
 
         private val engine by lazy {
             RhinoHelper(
-                    XServer.currentApplication,
-                    mapOf("app" to XServer.currentApplication)
+                    XServer.getCurrentApplication(),
+                    mapOf("app" to XServer.getCurrentApplication())
             )
         }
     }

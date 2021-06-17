@@ -46,6 +46,18 @@ public class XServer extends NanoWSD {
     public static AssetManager assetManager;
     public static Application currentApplication = null;
 
+    public static Application getCurrentApplication(){
+        if(currentApplication!=null)return currentApplication;
+        else {
+            try {
+                currentApplication = (Application) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentApplication").invoke(null);
+                return currentApplication;
+            }catch (Exception e){
+                return null;
+            }
+        }
+    }
+
     public XServer(int port) {
         this(port, null);
     }
