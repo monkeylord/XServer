@@ -1,11 +1,29 @@
 package monkeylord.XServer;
 
+import android.annotation.SuppressLint;
 import android.content.pm.ApplicationInfo;
 import android.content.res.XModuleResources;
 import android.os.Build;
+import android.os.MemoryFile;
 import android.os.Process;
+import android.system.Os;
+import android.system.OsConstants;
+import android.util.Log;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -20,6 +38,7 @@ import monkeylord.XServer.handler.Hook.Unhook;
 import monkeylord.XServer.handler.Hook.XServer_MethodHook;
 import monkeylord.XServer.handler.Hook.XServer_Param;
 import monkeylord.XServer.handler.HookHandler;
+import monkeylord.XServer.handler.MemoryHandler;
 
 /*
     某些Android 4版本，需要修改依赖库的配置才能兼容，否则会报pre-verifed错误。
@@ -38,12 +57,32 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
     Boolean isFirstApplication;
     String processName;
     ApplicationInfo appInfo;
+    long smAddr;
 
     @Override
     public void initZygote(StartupParam startupParam) throws Throwable {
         res = XModuleResources.createInstance(startupParam.modulePath, null);
         sPrefs = new XSharedPreferences(this.getClass().getPackage().getName().toLowerCase(), "XServer");
         sPrefs.makeWorldReadable();
+        try{
+            String targetApp = sPrefs.getString("targetApp", "MadMode");
+            File file = new File("/dev/zero");
+            RandomAccessFile randomAccessFile = new RandomAccessFile(file,"rw");
+            FileDescriptor fd = randomAccessFile.getFD();
+            if(!fd.valid())smAddr = 0;
+            else{
+                try {
+                    smAddr = MemoryHandler.mmap(0, 1024, OsConstants.PROT_READ | OsConstants.PROT_WRITE, OsConstants.MAP_SHARED, fd, 0);
+                    MemoryHandler.writeMemory(smAddr,(targetApp+"\0").getBytes());
+                }catch (InvocationTargetException e){
+                    throw e.getTargetException();
+                }finally {
+                    randomAccessFile.close();
+                }
+            }
+        }catch (Exception e){
+            Log.e("[XServer Experiment]", e.getMessage()+e.toString());
+        }
     }
 
     @Override
@@ -52,12 +91,14 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         //告知界面模块已启动，同时解除Android N以上对MODE_WORLD_READABLE的限制
         if (loadPackageParam.packageName.equals("monkeylord.xserver")) {
             XposedHelpers.findAndHookMethod("monkeylord.XServer.MainActivity", loadPackageParam.classLoader, "isModuleActive", XC_MethodReplacement.returnConstant(true));
+            XposedHelpers.findAndHookMethod("monkeylord.XServer.MainActivity", loadPackageParam.classLoader, "getSharedMem", XC_MethodReplacement.returnConstant(smAddr));
             if (Build.VERSION.SDK_INT >= 24)XposedHelpers.findAndHookMethod("android.app.ContextImpl", loadPackageParam.classLoader, "checkMode",int.class, XC_MethodReplacement.returnConstant(null));
             XposedBridge.log("XServer handleLoadPackage: "+ Build.VERSION.SDK_INT);
         }
         //获取目标包名
         sPrefs.reload();
         String targetApp = sPrefs.getString("targetApp", "MadMode");
+        if (targetApp.equals("MadMode")&&smAddr!=0)targetApp = new String(MemoryHandler.readMemory(smAddr,1024)).split("\0")[0];
         //if(targetApp.equals("MadMode"))XposedBridge.log("XServer Cannot Figure Out TargetApp...Hooking Everyone Now!!");
         if (!targetApp.equals("MadMode")&&!loadPackageParam.packageName.equals(targetApp)) return;
         gatherInfo(loadPackageParam);

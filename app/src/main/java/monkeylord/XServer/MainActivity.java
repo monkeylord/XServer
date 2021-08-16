@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.MemoryFile;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,8 +19,16 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.List;
+
+import monkeylord.XServer.handler.MemoryHandler;
 
 public class MainActivity extends Activity {
     SharedPreferences sp;
@@ -32,6 +41,7 @@ public class MainActivity extends Activity {
     private static boolean isModuleActive() {
         return false;
     }
+    private static long getSharedMem() {return 0;}
 
     public void makeWorldReadable(){
         new File("/data/data/" + XServer.class.getPackage().getName().toLowerCase()).setExecutable(true, false);
@@ -122,6 +132,12 @@ public class MainActivity extends Activity {
         editor.commit();
         info.setText("Target App:\r\n" + hookee);
         appname.setText(hookee);
+        try {
+            long sharedMem = getSharedMem();
+            if(sharedMem!=0)MemoryHandler.writeMemory(sharedMem,(hookee+"\0").getBytes());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //regEx.setChecked(isReg);
     }
 
