@@ -1,16 +1,22 @@
 package monkeylord.XServer.handler;
 
+import android.system.ErrnoException;
+
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
 public class MemoryHandler {
     static HashMap<String, Method> Memory = new HashMap<>();
+    static HashMap<String, Method> OS = new HashMap<>();
+    static Object osObject = null;
     static {
         try {
             // http://androidxref.com/4.4_r1/xref/libcore/luni/src/main/java/libcore/io/Memory.java
@@ -18,7 +24,29 @@ public class MemoryHandler {
             for (Method m:clzMemory.getDeclaredMethods()) {
                 Memory.put(m.getName(),m);
             }
+            // http://androidxref.com/9.0.0_r3/xref/libcore/luni/src/main/java/android/system/Os.java
+            Class clzOS = null;
+            try {
+                clzOS = Class.forName("libcore.io.Linux");
+            }catch (ClassNotFoundException e){
+                // for Android 4.4
+                clzOS = Class.forName("libcore.io.Posix");
+            }
+            Constructor osConstructor = clzOS.getDeclaredConstructor();
+            osConstructor.setAccessible(true);
+            osObject = osConstructor.newInstance();
+            for (Method m:clzOS.getDeclaredMethods()) {
+                OS.put(m.getName(),m);
+            }
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
     }
@@ -38,6 +66,16 @@ public class MemoryHandler {
         }
         //Memory.get("pokeByteArray").invoke(null,address, mem, 0, mem.length);
     }
+
+    public static long mmap(long address, long byteCount, int prot, int flags, FileDescriptor fd, long offset) throws IllegalAccessException, InvocationTargetException {
+        if(OS.get("mmap")==null)throw new IllegalAccessException();
+        return (long)OS.get("mmap").invoke(osObject,address,byteCount,prot,flags,fd,offset);
+    }
+    public static void munmap(long address, long byteCount) throws IllegalAccessException, InvocationTargetException {
+        if(OS.get("munmap")==null)throw new IllegalAccessException();
+        OS.get("munmap").invoke(osObject,address,byteCount);
+    }
+
     public static String[] getMaps(){
         File maps=new File("/proc/self/maps");
         StringBuilder sb = new StringBuilder();
