@@ -1,6 +1,10 @@
 package monkeylord.XServer;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
 import android.content.res.XModuleResources;
 import android.os.Build;
@@ -97,10 +101,27 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         //启动XServer
         if(!targetApp.equals("MadMode"))new XServer(8000);
         new XServer(Process.myPid());
-        String ip = NetworkUtils.getIPAddress(true);
+        final String ip = NetworkUtils.getIPAddress(true);
         XposedBridge.log("XServer Listening... " + loadPackageParam.packageName + " --> http://" + ip + ":" + Process.myPid());
         setXposedHookProvider();
         XposedBridge.log("Using XposedHook...@" + Process.myPid());
+        XposedHelpers.findAndHookMethod(Activity.class, "onStart", new XC_MethodHook() {
+            @Override
+            public void afterHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+                new AlertDialog.Builder((Context) param.thisObject)
+                        .setTitle("XServer activated")
+                        .setMessage("Open：http://" + ip + ":" + Process.myPid())
+                        .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        })
+                        .create().show();
+                XposedBridge.unhookMethod(param.method,this);
+            }
+        });
+
     }
 
     void setXposedHookProvider(){
