@@ -4,26 +4,17 @@ import android.annotation.SuppressLint;
 import android.content.pm.ApplicationInfo;
 import android.content.res.XModuleResources;
 import android.os.Build;
-import android.os.MemoryFile;
 import android.os.Process;
-import android.system.Os;
 import android.system.OsConstants;
 import android.util.Log;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
+import com.blankj.utilcode.util.NetworkUtils;
+
 import java.io.File;
 import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -85,6 +76,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         }
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
 
@@ -105,7 +97,8 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         //启动XServer
         if(!targetApp.equals("MadMode"))new XServer(8000);
         new XServer(Process.myPid());
-        XposedBridge.log("XServer Listening... on"+loadPackageParam.packageName + "@" + Process.myPid());
+        String ip = NetworkUtils.getIPAddress(true);
+        XposedBridge.log("XServer Listening... " + loadPackageParam.packageName + " --> http://" + ip + ":" + Process.myPid());
         setXposedHookProvider();
         XposedBridge.log("Using XposedHook...@" + Process.myPid());
     }

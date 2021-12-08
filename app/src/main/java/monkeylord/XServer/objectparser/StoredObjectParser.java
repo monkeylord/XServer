@@ -57,7 +57,7 @@ public class StoredObjectParser implements XServer.ObjectParser {
                 //if(field.isAccessible()){
                     field.setAccessible(true);
                     Object fieldObj = field.get(obj);
-                    Log.e("XServer", "SOParser Field: " + field.getName() + "@" + Utils.getTypeSignature(fieldObj.getClass()));
+                    Log.i("XServer", "SOParser Field: " + field.getName() + "@" + Utils.getTypeSignature(fieldObj.getClass()));
                     // 只处理原始类型，避免循环引用
                     // Handle primitive type only, avoid cell.
                     if(fieldObj.getClass().isPrimitive()||parsers.get(Utils.getTypeSignature(fieldObj.getClass()))!=null){

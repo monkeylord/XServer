@@ -65,7 +65,7 @@ public class XServer extends NanoWSD {
     public XServer(int port, Hashtable<String, Operation> route) {
         super(port);
         //确定应用名称
-        if (currentApp == "") {
+        if (currentApp.equals("")) {
             try {
                 currentApp = (String) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentPackageName").invoke(null);
                 currentApplication = (Application) Class.forName("android.app.ActivityThread").getDeclaredMethod("currentApplication").invoke(null);
