@@ -105,7 +105,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         final String ip = NetworkUtils.getIPAddress(true);
         XposedBridge.log("XServer Listening... " + loadPackageParam.packageName + " --> http://" + ip + ":" + Process.myPid());
         XposedBridge.log("Using XposedHook...@" + Process.myPid());
-        XposedHelpers.findAndHookMethod(Activity.class, "onStart", new XC_MethodHook() {
+        if(!targetApp.equals("MadMode"))XposedHelpers.findAndHookMethod(Activity.class, "onStart", new XC_MethodHook() {
             @Override
             public void afterHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
                 new AlertDialog.Builder((Context) param.thisObject)
