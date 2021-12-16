@@ -115,7 +115,7 @@ public class XServer extends NanoWSD {
         }
         ClassHandler.classLoaders.put("default-"+classLoader.hashCode(),classLoader);
         ClassHandler.monitorClassloaders(classLoader);
-        ClassHandler.classLoaders.put("application-"+getCurrentApplication().getClassLoader().hashCode(),getCurrentApplication().getClassLoader());
+        if(getCurrentApplication()!=null)ClassHandler.classLoaders.put("application-"+getCurrentApplication().getClassLoader().hashCode(),getCurrentApplication().getClassLoader());
     }
 
     @Override

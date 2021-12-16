@@ -20,7 +20,7 @@ import monkeylord.XServer.utils.Utils;
 public class ClassHandler {
     public static HashMap<String, ClassLoader> classLoaders = new HashMap<>();
 
-    public static boolean monitorClassloaders(ClassLoader classLoader){
+    public static boolean monitorClassloaders(final ClassLoader classLoader){
         try {
             Class classLoaderClz = ClassLoader.class;
             Member m = classLoaderClz.getDeclaredConstructor(ClassLoader.class);
@@ -29,7 +29,7 @@ public class ClassHandler {
                 public void beforeHookedMethod(XServer_Param param) throws Throwable {
                     super.beforeHookedMethod(param);
                     classLoaders.put("classloader"+ param.thisObject.hashCode(), (ClassLoader) param.thisObject);
-                    classLoaders.put("classloader"+ ((ClassLoader) param.thisObject).getParent().hashCode(), (ClassLoader) ((ClassLoader) param.thisObject).getParent());
+                    if(((ClassLoader) param.thisObject).getParent()!=null)classLoaders.put("classloader"+ ((ClassLoader) param.thisObject).getParent().hashCode(), (ClassLoader) ((ClassLoader) param.thisObject).getParent());
                 }
             });
             return true;
