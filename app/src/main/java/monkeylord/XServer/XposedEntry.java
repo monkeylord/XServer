@@ -103,10 +103,10 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         if (!targetApp.equals("MadMode")&&!loadPackageParam.packageName.equals(targetApp)) return;
         gatherInfo(loadPackageParam);
         //启动XServer
+        setXposedHookProvider();
         if(!targetApp.equals("MadMode"))new XServer(8000);
         new XServer(Process.myPid());
         XposedBridge.log("XServer Listening... on"+loadPackageParam.packageName + "@" + Process.myPid());
-        setXposedHookProvider();
         XposedBridge.log("Using XposedHook...@" + Process.myPid());
     }
 

@@ -56,6 +56,14 @@
         </#list>
     </details>
 </#if>
+<#if objs?exists>
+<details>
+    <summary>Known ClassLoaders(click to switch to):</summary>
+    <#list classloaders?keys as key>
+        <p><a href="classview?op=setclassloader&classloader=${key}">${key}:${classloaders[key]}</a></p>
+    </#list>
+</details>
+</#if>
 <!--
 <h1>Dynamic Xposed Module Load</h1>
 <form action=/file method="get" target="_blank">

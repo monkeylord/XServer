@@ -24,6 +24,7 @@ import monkeylord.XServer.api.Tracer;
 import monkeylord.XServer.api.WsScript;
 import monkeylord.XServer.api.wsMethodViewNew;
 import monkeylord.XServer.api.wsTracerNew;
+import monkeylord.XServer.handler.ClassHandler;
 import monkeylord.XServer.handler.ObjectHandler;
 import monkeylord.XServer.objectparser.BooleanParser;
 import monkeylord.XServer.objectparser.ByteArrayParser;
@@ -112,6 +113,9 @@ public class XServer extends NanoWSD {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        ClassHandler.classLoaders.put("default-"+classLoader.hashCode(),classLoader);
+        ClassHandler.monitorClassloaders(classLoader);
+        ClassHandler.classLoaders.put("application-"+getCurrentApplication().getClassLoader().hashCode(),getCurrentApplication().getClassLoader());
     }
 
     @Override
@@ -205,6 +209,7 @@ public class XServer extends NanoWSD {
                 map.put("params", session.getParms());
                 map.put("headers", session.getHeaders());
                 map.put("clzs", DexHelper.getClassesInDex(XServer.classLoader));
+                map.put("classloaders", ClassHandler.getClassLoaderDescriptions());
                 map.put("parsers", parsers);
                 map.put("objs", ObjectHandler.objects);
                 map.put("pid", String.valueOf(Process.myPid()));
