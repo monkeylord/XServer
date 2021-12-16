@@ -24,6 +24,9 @@ public class ClassView extends BaseOperation {
                         res.put("classes",
                                 DexHelper.getClassesInDex(XServer.classLoader));
                         return res.toJSONString();
+                    case "setclassloader":
+                        res.put("success",ClassHandler.setXServerClassloader(parms.get("classloader")));
+                        return "<meta http-equiv=\"refresh\" content=\"1;url=/\"> ";
                     default:
                         return "";
                 }

@@ -3,15 +3,63 @@ package monkeylord.XServer.handler;
 import com.alibaba.fastjson.JSON;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
+import monkeylord.XServer.XServer;
+import monkeylord.XServer.handler.Hook.XServer_MethodHook;
+import monkeylord.XServer.handler.Hook.XServer_Param;
 import monkeylord.XServer.utils.DexHelper;
 import monkeylord.XServer.utils.Utils;
 
 //处理类相关的内容
 public class ClassHandler {
+    public static HashMap<String, ClassLoader> classLoaders = new HashMap<>();
+
+    public static boolean monitorClassloaders(ClassLoader classLoader){
+        try {
+            Class classLoaderClz = ClassLoader.class;
+            Member m = classLoaderClz.getDeclaredConstructor(ClassLoader.class);
+            HookHandler.getProvider().hookMethod(m, new XServer_MethodHook() {
+                @Override
+                public void beforeHookedMethod(XServer_Param param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    classLoaders.put("classloader"+ param.thisObject.hashCode(), (ClassLoader) param.thisObject);
+                    classLoaders.put("classloader"+ ((ClassLoader) param.thisObject).getParent().hashCode(), (ClassLoader) ((ClassLoader) param.thisObject).getParent());
+                }
+            });
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean setXServerClassloader(String name){
+        if(classLoaders.get(name)!=null){
+            XServer.classLoader = classLoaders.get(name);
+            return true;
+        }
+        return false;
+    }
+
+    public static HashMap<String, String> getClassLoaderDescriptions(){
+        HashMap<String,String> map = new HashMap<>();
+        for (Map.Entry<String,ClassLoader> entry:classLoaders.entrySet()) {
+            try {
+                map.put(entry.getKey(), entry.getValue().toString());
+            }catch (Exception e){
+                e.printStackTrace();
+                map.put(entry.getKey(),entry.getValue().getClass().getName());
+            }
+        }
+        return map;
+    }
+
     public static String[] getAllClasses(ClassLoader classLoader) {
         return DexHelper.getClassesInDex(classLoader);
     }
