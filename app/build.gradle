@@ -30,7 +30,7 @@ dependencies {
     implementation files('lib/freemarker.jar')
     implementation files('lib/openbeans.jar')
     implementation project(":rhino-android")
-
+    implementation 'com.blankj:utilcode:1.29.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 }
