@@ -46,6 +46,7 @@ public class XServer extends NanoWSD {
     public static String currentApp = "";
     public static AssetManager assetManager;
     public static Application currentApplication = null;
+    public static XServer instance=null;
 
     public static Application getCurrentApplication(){
         if(currentApplication!=null)return currentApplication;
@@ -110,6 +111,7 @@ public class XServer extends NanoWSD {
         try {
             //启动监听
             start(0, false);
+            instance = this;
         } catch (IOException e) {
             e.printStackTrace();
         }

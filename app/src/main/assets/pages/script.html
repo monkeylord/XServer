@@ -24,7 +24,24 @@
 
     <div>
         <h4>Script Content</h4>
-        <textarea id="script_data" style="width: 609px; height: 363px;">print(app)</textarea>
+        <textarea id="script_data" style="width: 609px; height: 363px;">
+// script hook example
+// 1. get target method
+var targetClass= java.lang.Class.forName("targetAppPackage.targetAppClass",false, app.getClassLoader())
+var targetMethod=null;
+targetClass.getDeclaredMethods().forEach((m)=>{if(m.getName()=="targetMethodName")targetMethod=m})
+
+// 2. prepare callback
+var callback= {
+ beforeHookedMethod: function(param){print(param.thisObject);print(param.args.forEach(arg=>print(arg)))},
+ afterHookedMethod: function(param){print(param.result)},
+}
+// 3. hook target method with callback
+var unhook = hook.hookMethod(targetMethod,new Packages.monkeylord.XServer.handler.Hook.XServer_MethodHook(callback))
+print(unhook);
+// 4. unhook
+// unhook.unhook()
+        </textarea>
         <p>
             <button onclick="run()">Run</button>
             <button onclick="clearLog()">Clear Log</button>
@@ -33,11 +50,17 @@
         <p>
             app: current application
         </p>
+        <p>
+            xserver: xserver instance
+        </p>
+        <p>
+            hook: hook provider
+        </p>
     </div>
 
     <div>
         <p>LOG</p>
-        <p id="log_area" style="width: 609px;padding: 10px; overflow:auto;height: 363px; line-height: 0.5;font-size: 10px;"></p>
+        <p id="log_area" style="width: 609px;padding: 10px; overflow:auto;height: 363px; line-height: 1;font-size: 10px;"></p>
 
     </div>
 

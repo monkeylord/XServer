@@ -6,6 +6,7 @@ import cn.vove7.rhino.RhinoHelper
 import cn.vove7.rhino.api.RhinoApi
 import monkeylord.XServer.XServer
 import monkeylord.XServer.XServer.wsOperation
+import monkeylord.XServer.handler.HookHandler
 import monkeylord.XServer.utils.NanoHTTPD.IHTTPSession
 import monkeylord.XServer.utils.NanoWSD.WebSocket
 import monkeylord.XServer.utils.NanoWSD.WebSocketFrame
@@ -37,7 +38,9 @@ class WsScript : wsOperation {
         private val engine by lazy {
             RhinoHelper(
                     XServer.getCurrentApplication(),
-                    mapOf("app" to XServer.getCurrentApplication())
+                    mapOf("app" to XServer.getCurrentApplication()
+                            ,"xserver" to XServer.instance
+                            ,"hook" to HookHandler.getProvider())
             )
         }
     }
