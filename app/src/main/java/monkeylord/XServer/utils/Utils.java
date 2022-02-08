@@ -1,5 +1,7 @@
 package monkeylord.XServer.utils;
 
+import com.blankj.utilcode.util.NetworkUtils;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -22,6 +24,14 @@ public class Utils {
         PRIMITIVE_TO_SIGNATURE.put(double.class, "D");
         PRIMITIVE_TO_SIGNATURE.put(void.class, "V");
         PRIMITIVE_TO_SIGNATURE.put(boolean.class, "Z");
+    }
+
+    public static String getMyIp(){
+        try {
+            return NetworkUtils.getIPAddress(true);
+        }catch (Exception e){
+            return  "127.0.0.1";
+        }
     }
 
     public static String MethodDescription(Method m) {

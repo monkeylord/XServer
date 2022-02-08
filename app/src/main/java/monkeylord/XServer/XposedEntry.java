@@ -35,6 +35,8 @@ import monkeylord.XServer.handler.Hook.XServer_Param;
 import monkeylord.XServer.handler.HookHandler;
 import monkeylord.XServer.handler.MemoryHandler;
 
+import static monkeylord.XServer.utils.Utils.getMyIp;
+
 /*
     某些Android 4版本，需要修改依赖库的配置才能兼容，否则会报pre-verifed错误。
 	原因：Framework也提供了XposedBridgeApi，和编译进插件的内容重复。所以要把XposedBridgeApi从编译改为引用。
@@ -102,7 +104,7 @@ public class XposedEntry implements IXposedHookLoadPackage, IXposedHookZygoteIni
         setXposedHookProvider();
         if(!targetApp.equals("MadMode"))new XServer(8000);
         new XServer(Process.myPid());
-        final String ip = NetworkUtils.getIPAddress(true);
+        final String ip = getMyIp();
         XposedBridge.log("XServer Listening... " + loadPackageParam.packageName + " --> http://" + ip + ":" + Process.myPid());
         XposedBridge.log("Using XposedHook...@" + Process.myPid());
         if(!targetApp.equals("MadMode"))XposedHelpers.findAndHookMethod(Activity.class, "onStart", new XC_MethodHook() {
